@@ -53,6 +53,8 @@ async function registrarUsuario(req, res) {
   }
 }
 
+
+
 // Función para generar el username automático
 function generarUsername(idUsuario, nombreCompleto, rol) {
   // Tomar las primeras 3 letras del primer nombre

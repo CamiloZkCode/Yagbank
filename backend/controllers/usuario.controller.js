@@ -1,4 +1,46 @@
 const usuariosModel = require('../models/user.models');
+const db = require('../config/db');
+
+async function cambiarEstadoUsuario(req, res) {
+  try {
+    const { id } = req.params;
+
+    // Verificar si el usuario existe
+    const [existing] = await db.query(
+      'SELECT estado FROM usuarios WHERE id_usuario = ?',
+      [id]
+    );
+
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'El usuario no existe' });
+    }
+
+    // Cambiar el estado (toggle)
+    await db.query(
+      'UPDATE usuarios SET estado = NOT estado WHERE id_usuario = ?',
+      [id]
+    );
+
+    // Obtener el nuevo estado
+    const [updated] = await db.query(
+      'SELECT estado FROM usuarios WHERE id_usuario = ?',
+      [id]
+    );
+
+    const nuevoEstado = updated[0].estado;
+
+    res.status(200).json({
+      message: 'Estado del usuario cambiado correctamente',
+      nuevoEstado: nuevoEstado,
+      estadoTexto: nuevoEstado ? 'Activo' : 'Inactivo'
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
+}
+
 
 
 const getSupervisores = async (req, res) => {
@@ -40,5 +82,6 @@ const getUsuariosxAdmin = async (req, res) => {
 module.exports = {
   getUsuariosxAdmin,
   getSupervisores,
-  getUsuariosxSupervisor
+  getUsuariosxSupervisor,
+  cambiarEstadoUsuario,
   };
