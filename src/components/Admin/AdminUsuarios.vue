@@ -5,51 +5,7 @@
                 Crear Usuario
                 <span class="material-symbols-outlined">assignment_ind</span>
             </button>
-
-            <button @click="mostrarRutas = true">
-                Asignar Ruta
-                <span class="material-symbols-outlined">edit_road</span>
-            </button>
         </div>
-
-
-        <!-- Modal: Crear Ruta -->
-        <!-- Modal Ruta -->
-        <div v-if="mostrarRutas" class="modal-overlay">
-            <div class="modal-content">
-                <span class="material-symbols-outlined close-icon"
-                    @click="mostrarRutas = false; limpiarRuta()">close</span>
-                <h2>Asignar Ruta</h2>
-
-                <form @submit.prevent="guardarRuta">
-
-                    <!-- id de la ruta -->
-                    <input v-model="ruta.id_ruta" type="number" placeholder="Número de ruta (ID)" required min="1" />
-                    <!-- Nombre de la ruta -->
-                    <input v-model="ruta.nombre_ruta" placeholder="Nombre de la ruta" required />
-                    <!-- Supervisor -->
-                    <select v-model="ruta.id_supervisor" @change="filtrarAsesores" required>
-                        <option value="" disabled>Seleccione un supervisor</option>
-                        <option v-for="sup in supervisores" :key="sup.id" :value="sup.id">
-                            {{ sup.nombre }}
-                        </option>
-                    </select>
-                    <!-- Asesor -->
-                    <select v-model="ruta.id_asesor" :disabled="!ruta.id_supervisor" required>
-                        <option value="" disabled>Seleccione un asesor</option>
-                        <option v-for="ase in asesores" :key="ase.id" :value="ase.id">
-                            {{ ase.nombre }}
-                        </option>
-                    </select>
-
-                    <button type="submit">Guardar Ruta</button>
-                </form>
-            </div>
-        </div>
-
-
-
-
         <!-- Modal: Crear Usuario -->
         <!-- Modal Usuario -->
         <div v-if="mostrarUsuario" class="modal-overlay">
@@ -68,7 +24,7 @@
                     <select v-model="usuario.id_rol" required>
                         <option disabled value="">Seleccione un rol</option>
                         <option value="2">Supervisor</option>
-                        <option value="3">Trabajador</option>
+                        <option value="3">Asesor</option>
                     </select>
 
                     <!--Si  está creando trabajador: debe seleccionar supervisor -->
@@ -83,6 +39,40 @@
         </div>
 
 
+        <!--Modal Editar Usuario-->
+
+        <!-- Modal de edición (junto a tu modal de registro existente) -->
+        <div v-if="mostrarEditarUsuario" class="modal-overlay">
+            <div class="modal-content">
+                <span class="material-symbols-outlined close-icon" @click="mostrarEditarUsuario = false">close</span>
+                <h2>Editar Usuario</h2>
+
+                <form @submit.prevent="guardarEdicion">
+                    <input v-model="usuarioEditado.nombre" placeholder="Nombre de usuario" required />
+                    <input v-model="usuarioEditado.correo" type="email" placeholder="Correo" required />
+                    <input v-model="usuarioEditado.telefono" placeholder="Teléfono" required />
+
+                    <!-- Selección de rol según usuario logueado -->
+                    <select v-model="usuarioEditado.id_rol" required>
+                        <option disabled value="">Seleccione un rol</option>
+                        <option value="2">Supervisor</option>
+                        <option value="3">Asesor</option>
+                    </select>
+
+                    <!-- Si está editando trabajador: debe seleccionar supervisor -->
+                    <select v-if="usuarioEditado.id_rol == 3" v-model="usuarioEditado.id_supervisor" required>
+                        <option disabled value="">Seleccione un supervisor</option>
+                        <option v-for="sup in supervisores" :key="sup.id" :value="sup.id">{{ sup.nombre }}</option>
+                    </select>
+
+                    <button type="submit">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+
+
+
+
         <div class="contenedor-tabla">
             <div class="filtros">
                 <div class="filtro-cedula">
@@ -95,7 +85,7 @@
                     <select v-model="filtroCargo">
                         <option value="">Todos los cargos</option>
                         <option value="Supervisor">Supervisor</option>
-                        <option value="Asesores">Asesores</option>
+                        <option value="Asesor">Asesor</option>
                     </select>
                 </div>
             </div>
@@ -123,12 +113,18 @@
                                 <td>{{ usuario.cargo }}</td>
                                 <td>{{ usuario.nombre_jefe }}</td>
                                 <td>
-                                    <span class="material-symbols-outlined delete"@click="toggleEstado(usuario.id)">
-                                            {{ usuario.estado ? 'Desactivar' : 'Activar' }}
+                                    <span class="material-symbols-outlined icon-estado"
+                                        @click="toggleEstado(usuario.id)"
+                                        :class="{ 'icon-activo': usuario.estado, 'icon-inactivo': !usuario.estado }"
+                                        :title="usuario.estado ? 'Desactivar' : 'Activar'">
+                                        shield_toggle
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="material-symbols-outlined edit">edit</span>
+                                    <span class="material-symbols-outlined edit" @click="abrirModalEdicion(usuario)"
+                                        title="Editar usuario">
+                                        edit
+                                    </span>
                                 </td>
                                 <td>
                                     <span class="material-symbols-outlined ver-mas" @click="toggleExpand(usuario.id)">
@@ -142,9 +138,8 @@
                                 <td colspan="7" class="fila-expandida">
                                     <div class="info-extra">
                                         <strong>Correo:</strong> {{ usuario.correo }} &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Username:</strong> {{ usuario.username || 'N/A' }}
+                                        <strong>Username:</strong> {{ usuario.username || 'N/A' }} &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Estado:</strong> {{ usuario.estado_texto || 'N/A' }}
-
                                     </div>
                                 </td>
                             </tr>
@@ -159,8 +154,7 @@
 <script setup>
 
 import { ref, computed, onMounted } from 'vue'
-import { registrarUsuario, obtenerSupervisores, creartablaUsuarioXAdministrador,cambiarEstado } from '@/services/usuario'
-import { crearRutas, obtenerAsesores } from '@/services/rutas'
+import { registrarUsuario, obtenerSupervisores, creartablaUsuarioXAdministrador, cambiarEstado, EditarUsuario } from '@/services/usuario'
 import { useAuthStore } from '@/stores/auth'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
@@ -171,16 +165,16 @@ import 'alertifyjs/build/css/alertify.css'
 const authStore = useAuthStore()
 const usuarioLogueado = computed(() => authStore.user)
 
+// Estados reactivos
+const mostrarUsuario = ref(false)  // Control de visibilidad de modal
+const mostrarEditarUsuario = ref(false) // Control de visibilidad de modal
+const supervisores = ref([])  // Cargar Lista De supervisores
+const usuarioExpandido = ref(null) // Expandir 
+const usuarios = ref([])
+const filtroCedula = ref('')
+const filtroCargo = ref('')
 
-// Control de visibilidad de modales
-const mostrarUsuario = ref(false)
-const mostrarRutas = ref(false)
 
-// Cargar Lista De supervisores
-const supervisores = ref([])
-
-//Cargar Lista de Asesores 
-const asesores = ref([])
 
 // Datos del usuario a crear
 const usuario = ref({
@@ -192,6 +186,37 @@ const usuario = ref({
     id_administrador: null,
     id_supervisor: "",
 })
+
+const usuarioEditado = ref({
+    id_usuario: '',
+    nombre: '',
+    correo: '',
+    telefono: '',
+    id_rol: '',
+    id_administrador: null,
+    id_supervisor: "",
+})
+
+//Computed
+const usuariosFiltrados = computed(() => {
+    if (!Array.isArray(usuarios.value)) return []
+
+    return usuarios.value.filter(usuario => {
+        const usuarioValido = usuario && typeof usuario === 'object'
+        if (!usuarioValido) return false
+
+        const coincideCedula = usuario.id?.toString()
+            .includes(filtroCedula.value.trim())
+
+        const coincideCargo = filtroCargo.value === '' ||
+            (usuario.cargo || '').toLowerCase()
+                .includes(filtroCargo.value.toLowerCase())
+
+        return coincideCedula && coincideCargo
+    })
+})
+
+
 
 // Funcion para limpiar formulario de crear usuario
 const limpiarFormulario = () => {
@@ -205,6 +230,64 @@ const limpiarFormulario = () => {
         id_supervisor: "",
     };
 };
+
+const abrirModalEdicion = (usuarioData) => {
+    usuarioEditado.value = {
+        id_usuario: usuarioData.id_usuario || usuarioData.id, // Usa el campo correcto según tu estructura
+        nombre: usuarioData.nombre,
+        correo: usuarioData.correo,
+        telefono: usuarioData.telefono,
+        id_rol: usuarioData.id_rol,
+        id_administrador: usuarioData.id_administrador,
+        id_supervisor: usuarioData.id_supervisor
+    }
+    mostrarEditarUsuario.value = true
+}
+
+
+//Funcion para Guardar Edicion
+const guardarEdicion = async () => {
+    try {
+        // Primero, definir una copia de los datos a enviar
+        const datosActualizados = {
+            nombre: usuarioEditado.value.nombre,
+            telefono: usuarioEditado.value.telefono,
+            correo: usuarioEditado.value.correo,
+            id_rol: usuarioEditado.value.id_rol,
+            id_administrador: usuarioEditado.value.id_administrador,
+            id_supervisor: usuarioEditado.value.id_supervisor || null,
+        };
+
+        // Lógica para asignar id_administrador y limpiar id_supervisor según rol (igual que guardarUsuario)
+        if (datosActualizados.id_rol == 2) {
+            // Rol supervisor
+            datosActualizados.id_administrador = usuarioLogueado.value.id;  // admin logueado
+            datosActualizados.id_supervisor = null;
+        } else if (datosActualizados.id_rol == 3) {
+            // Rol asesor
+            // El id_administrador debe ser el id_supervisor seleccionado
+            datosActualizados.id_administrador = datosActualizados.id_supervisor;
+            datosActualizados.id_supervisor = null;
+        } else {
+            // Otros roles (por si acaso), mantén como están o nulo
+            datosActualizados.id_administrador = datosActualizados.id_administrador || null;
+            datosActualizados.id_supervisor = datosActualizados.id_supervisor || null;
+        }
+
+        // Llamar a la función para enviar la edición al backend
+        await EditarUsuario(usuarioEditado.value.id_usuario, datosActualizados);
+
+        mostrarEditarUsuario.value = false;
+        await cargarUsuariosDelAdministrador();
+        alertify.success('Usuario actualizado correctamente');
+    } catch (error) {
+        console.error('Error al editar usuario:', error);
+        alertify.error(error.message || 'Error al actualizar usuario');
+    }
+};
+
+
+
 
 // Función para guardar usuario (aquí accedes al la url gestionada por axios)
 const guardarUsuario = async () => {
@@ -253,53 +336,7 @@ const guardarUsuario = async () => {
 };
 
 
-// Datos de la Ruta a crear
-const ruta = ref({
-    id_ruta: '',
-    nombre_ruta: '',
-    id_supervisor: '',
-    id_asesor: ''
-})
-
-// Limpiar formulario de ruta
-const limpiarRuta = () => {
-    ruta.value = {
-        id_ruta: '',
-        nombre_ruta: '',
-        id_supervisor: '',
-        id_asesor: ''
-    }
-}
-
-const guardarRuta = async () => {
-    try {
-        // Validación básica
-        if (!ruta.value.id_ruta || !ruta.value.nombre_ruta || !ruta.value.id_asesor) {
-            alertify.error('¡Complete todos los campos!');
-            return;
-        }
-
-        // Enviar datos al backend
-        await crearRutas({
-            id_ruta: ruta.value.id_ruta,
-            id_asesor: ruta.value.id_asesor,
-            nombre_ruta: ruta.value.nombre_ruta
-        });
-
-        // Notificación simple y cierre
-        alertify.success('Ruta creada');
-        mostrarRutas.value = false;
-        limpiarRuta();
-
-    } catch (error) {
-        console.error("Error:", error);
-        alertify.error(error.response?.data?.message || 'Error al crear ruta');
-    }
-};
-
-
-const usuarioExpandido = ref(null)
-
+//Expandir Tabla
 const toggleExpand = (id) => {
     usuarioExpandido.value = usuarioExpandido.value === id ? null : id
 }
@@ -312,37 +349,6 @@ const cargarSupervisores = async () => {
         console.error('Error al obtener supervisores:', error)
     }
 }
-
-//cargar Asesores  
-const cargarAsesores = async (id_supervisor) => {
-    asesores.value = []
-    if (!id_supervisor) return
-
-    try {
-        const id = Number(id_supervisor)
-        if (!id) return
-        asesores.value = await obtenerAsesores(id)
-    } catch (error) {
-        console.error('Error al obtener asesores:', error)
-    }
-}
-
-// Cuando selecciona un supervisor
-const filtrarAsesores = () => {
-    cargarAsesores(ruta.value.id_supervisor)
-}
-
-
-onMounted(async () => {
-    console.log('Iniciando carga de datos...')
-    try {
-        await cargarUsuariosDelAdministrador()
-        await cargarSupervisores()
-        console.log('Datos cargados completamente')
-    } catch (error) {
-        console.error('Error en mounted:', error)
-    }
-})
 
 async function cargarUsuariosDelAdministrador() {
     try {
@@ -362,45 +368,37 @@ async function cargarUsuariosDelAdministrador() {
 }
 
 async function toggleEstado(id_usuario) {
-    try{
-         const res = await cambiarEstado(id_usuario)
+    try {
+        const res = await cambiarEstado(id_usuario)
 
-         const index = usuarios.value.findIndex(u => u.id === id_usuario)
-    if (index !== -1) {
-      usuarios.value[index].estado = res.nuevoEstado
-      usuarios.value[index].estado_texto = res.estadoTexto
-    }
+        const index = usuarios.value.findIndex(u => u.id === id_usuario)
+        if (index !== -1) {
+            usuarios.value[index].estado = res.nuevoEstado
+            usuarios.value[index].estado_texto = res.estadoTexto
+        }
 
-    alertify.success("Estado cambiado correctamente")
-    }catch (error){
-        console.error('Error',error)
+        alertify.success("Estado cambiado correctamente")
+    } catch (error) {
+        console.error('Error', error)
         console.error('Error al cambiar estado:', error)
         alertify.error("No se pudo cambiar el estado")
     }
 }
 
-const usuarios = ref([])
-const filtroCedula = ref('')
-const filtroCargo = ref('')
 
-// Filtro combinado
-const usuariosFiltrados = computed(() => {
-    if (!Array.isArray(usuarios.value)) return []
 
-    return usuarios.value.filter(usuario => {
-        const usuarioValido = usuario && typeof usuario === 'object'
-        if (!usuarioValido) return false
-
-        const coincideCedula = usuario.id?.toString()
-            .includes(filtroCedula.value.trim())
-
-        const coincideCargo = filtroCargo.value === '' ||
-            (usuario.cargo || '').toLowerCase()
-                .includes(filtroCargo.value.toLowerCase())
-
-        return coincideCedula && coincideCargo
-    })
+//Hooks
+onMounted(async () => {
+    console.log('Iniciando carga de datos...')
+    try {
+        await cargarUsuariosDelAdministrador()
+        await cargarSupervisores()
+        console.log('Datos cargados completamente')
+    } catch (error) {
+        console.error('Error en mounted:', error)
+    }
 })
+
 </script>
 
 <style scoped>
@@ -608,9 +606,25 @@ table tbody tr:last-child td {
     cursor: pointer;
 }
 
-.delete {
-    color: var(--color-rojo-5);
+/*===========================ESTADO USUARIO========================*/
+
+.icon-estado {
+    cursor: pointer;
+    font-size: 2rem;
+    transition: color 0.3s ease;
 }
+
+.icon-activo {
+    color: #4CAF50;
+    /* Verde para activo */
+}
+
+.icon-inactivo {
+    color: #F44336;
+    /* Rojo para inactivo */
+}
+
+/*===============Fin estado Usuario ==================*/
 
 .ver-mas {
     color: var(--color-azul-1);
@@ -719,11 +733,11 @@ table tbody tr:last-child td {
     .contenedor-tabla table {
         width: 100%;
         margin-top: 1rem;
-        font-size: 1rem;
+        font-size: 1.1rem;
     }
 
     .contenedor-tabla table span {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
         cursor: pointer;
     }
 
