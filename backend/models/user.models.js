@@ -18,6 +18,8 @@ async function getRolById(id_rol) {
   return rows[0]?.rol;
 }
 
+
+
 const obtenerSupervisores = async () => {
   const [rows] = await db.query(
     "SELECT id_usuario AS id, nombre FROM usuarios WHERE id_rol = 2"
@@ -52,6 +54,12 @@ const obtenerUsuariosxAdmin = async (id_admin) => {
       u.correo,
       u.username,
       r.rol AS cargo,
+      -- Estado como booleano y como texto
+      u.estado,
+      CASE 
+        WHEN u.estado = true THEN 'Activo'
+        ELSE 'Inactivo'
+      END AS estado_texto,
       -- Datos del jefe directo
       jefe.nombre AS nombre_jefe,
       jefe_rol.rol AS cargo_jefe

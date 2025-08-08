@@ -39,3 +39,14 @@ export async function obtenerSupervisores() {
   }
 }
 
+export async function cambiarEstado(id) {
+  try {
+    const res = await API.post(`/usuarios/${id}/estado`)
+    alert('Estado cambiado');
+    return res.data
+  } catch (err) {
+    throw err.response?.data || err
+  }
+}
+
+
