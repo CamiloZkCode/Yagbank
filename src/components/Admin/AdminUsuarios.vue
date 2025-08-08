@@ -6,6 +6,11 @@
                 Crear Usuario
                 <span class="material-symbols-outlined">assignment_ind</span>
             </button>
+
+            <button>
+                Asignar Ruta
+                  <span class="material-symbols-outlined">edit_road</span>
+            </button>
         </div>
 
         <!-- Modal: Crear Usuario -->
