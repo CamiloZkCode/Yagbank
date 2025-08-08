@@ -39,6 +39,7 @@ export async function obtenerSupervisores() {
   }
 }
 
+//Función : Metodo para cambiar el estado del usuario activo/desactivo
 export async function cambiarEstado(id) {
   try {
     const res = await API.post(`/usuarios/${id}/estado`)

@@ -123,7 +123,9 @@
                                 <td>{{ usuario.cargo }}</td>
                                 <td>{{ usuario.nombre_jefe }}</td>
                                 <td>
-                                    <span class="material-symbols-outlined delete">delete</span>
+                                    <span class="material-symbols-outlined delete"@click="toggleEstado(usuario.id)">
+                                            {{ usuario.estado ? 'Desactivar' : 'Activar' }}
+                                    </span>
                                 </td>
                                 <td>
                                     <span class="material-symbols-outlined edit">edit</span>
@@ -141,6 +143,7 @@
                                     <div class="info-extra">
                                         <strong>Correo:</strong> {{ usuario.correo }} &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Username:</strong> {{ usuario.username || 'N/A' }}
+                                        <strong>Estado:</strong> {{ usuario.estado_texto || 'N/A' }}
 
                                     </div>
                                 </td>
@@ -156,7 +159,7 @@
 <script setup>
 
 import { ref, computed, onMounted } from 'vue'
-import { registrarUsuario, obtenerSupervisores, creartablaUsuarioXAdministrador } from '@/services/usuario'
+import { registrarUsuario, obtenerSupervisores, creartablaUsuarioXAdministrador,cambiarEstado } from '@/services/usuario'
 import { crearRutas, obtenerAsesores } from '@/services/rutas'
 import { useAuthStore } from '@/stores/auth'
 import alertify from 'alertifyjs'
@@ -355,6 +358,24 @@ async function cargarUsuariosDelAdministrador() {
     } catch (error) {
         console.error("Error al cargar usuarios:", error)
         usuarios.value = [] // Limpiar en caso de error
+    }
+}
+
+async function toggleEstado(id_usuario) {
+    try{
+         const res = await cambiarEstado(id_usuario)
+
+         const index = usuarios.value.findIndex(u => u.id === id_usuario)
+    if (index !== -1) {
+      usuarios.value[index].estado = res.nuevoEstado
+      usuarios.value[index].estado_texto = res.estadoTexto
+    }
+
+    alertify.success("Estado cambiado correctamente")
+    }catch (error){
+        console.error('Error',error)
+        console.error('Error al cambiar estado:', error)
+        alertify.error("No se pudo cambiar el estado")
     }
 }
 
