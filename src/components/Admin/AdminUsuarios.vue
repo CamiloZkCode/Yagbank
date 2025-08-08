@@ -1,17 +1,54 @@
 <template>
     <div>
-
         <div class="contenedor-botones">
             <button @click="mostrarUsuario = true">
                 Crear Usuario
                 <span class="material-symbols-outlined">assignment_ind</span>
             </button>
 
-            <button>
+            <button @click="mostrarRutas = true">
                 Asignar Ruta
-                  <span class="material-symbols-outlined">edit_road</span>
+                <span class="material-symbols-outlined">edit_road</span>
             </button>
         </div>
+
+
+        <!-- Modal: Crear Ruta -->
+        <!-- Modal Ruta -->
+        <div v-if="mostrarRutas" class="modal-overlay">
+            <div class="modal-content">
+                <span class="material-symbols-outlined close-icon"
+                    @click="mostrarRutas = false; limpiarRuta()">close</span>
+                <h2>Asignar Ruta</h2>
+
+                <form @submit.prevent="guardarRuta">
+
+                    <!-- id de la ruta -->
+                    <input v-model="ruta.id_ruta" type="number" placeholder="Número de ruta (ID)" required min="1" />
+                    <!-- Nombre de la ruta -->
+                    <input v-model="ruta.nombre_ruta" placeholder="Nombre de la ruta" required />
+                    <!-- Supervisor -->
+                    <select v-model="ruta.id_supervisor" @change="filtrarAsesores" required>
+                        <option value="" disabled>Seleccione un supervisor</option>
+                        <option v-for="sup in supervisores" :key="sup.id" :value="sup.id">
+                            {{ sup.nombre }}
+                        </option>
+                    </select>
+                    <!-- Asesor -->
+                    <select v-model="ruta.id_asesor" :disabled="!ruta.id_supervisor" required>
+                        <option value="" disabled>Seleccione un asesor</option>
+                        <option v-for="ase in asesores" :key="ase.id" :value="ase.id">
+                            {{ ase.nombre }}
+                        </option>
+                    </select>
+
+                    <button type="submit">Guardar Ruta</button>
+                </form>
+            </div>
+        </div>
+
+
+
 
         <!-- Modal: Crear Usuario -->
         <!-- Modal Usuario -->
@@ -120,6 +157,7 @@
 
 import { ref, computed, onMounted } from 'vue'
 import { registrarUsuario, obtenerSupervisores, creartablaUsuarioXAdministrador } from '@/services/usuario'
+import { crearRutas, obtenerAsesores } from '@/services/rutas'
 import { useAuthStore } from '@/stores/auth'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
@@ -133,9 +171,13 @@ const usuarioLogueado = computed(() => authStore.user)
 
 // Control de visibilidad de modales
 const mostrarUsuario = ref(false)
+const mostrarRutas = ref(false)
 
 // Cargar Lista De supervisores
 const supervisores = ref([])
+
+//Cargar Lista de Asesores 
+const asesores = ref([])
 
 // Datos del usuario a crear
 const usuario = ref({
@@ -147,7 +189,8 @@ const usuario = ref({
     id_administrador: null,
     id_supervisor: "",
 })
-// Funcion para limpiar formulario de crear usario
+
+// Funcion para limpiar formulario de crear usuario
 const limpiarFormulario = () => {
     usuario.value = {
         id_usuario: "",
@@ -207,12 +250,58 @@ const guardarUsuario = async () => {
 };
 
 
+// Datos de la Ruta a crear
+const ruta = ref({
+    id_ruta: '',
+    nombre_ruta: '',
+    id_supervisor: '',
+    id_asesor: ''
+})
+
+// Limpiar formulario de ruta
+const limpiarRuta = () => {
+    ruta.value = {
+        id_ruta: '',
+        nombre_ruta: '',
+        id_supervisor: '',
+        id_asesor: ''
+    }
+}
+
+const guardarRuta = async () => {
+    try {
+        // Validación básica
+        if (!ruta.value.id_ruta || !ruta.value.nombre_ruta || !ruta.value.id_asesor) {
+            alertify.error('¡Complete todos los campos!');
+            return;
+        }
+
+        // Enviar datos al backend
+        await crearRutas({
+            id_ruta: ruta.value.id_ruta,
+            id_asesor: ruta.value.id_asesor,
+            nombre_ruta: ruta.value.nombre_ruta
+        });
+
+        // Notificación simple y cierre
+        alertify.success('Ruta creada');
+        mostrarRutas.value = false;
+        limpiarRuta();
+
+    } catch (error) {
+        console.error("Error:", error);
+        alertify.error(error.response?.data?.message || 'Error al crear ruta');
+    }
+};
+
+
 const usuarioExpandido = ref(null)
 
 const toggleExpand = (id) => {
     usuarioExpandido.value = usuarioExpandido.value === id ? null : id
 }
 
+//Cargar Supervisores
 const cargarSupervisores = async () => {
     try {
         supervisores.value = await obtenerSupervisores()
@@ -220,6 +309,26 @@ const cargarSupervisores = async () => {
         console.error('Error al obtener supervisores:', error)
     }
 }
+
+//cargar Asesores  
+const cargarAsesores = async (id_supervisor) => {
+    asesores.value = []
+    if (!id_supervisor) return
+
+    try {
+        const id = Number(id_supervisor)
+        if (!id) return
+        asesores.value = await obtenerAsesores(id)
+    } catch (error) {
+        console.error('Error al obtener asesores:', error)
+    }
+}
+
+// Cuando selecciona un supervisor
+const filtrarAsesores = () => {
+    cargarAsesores(ruta.value.id_supervisor)
+}
+
 
 onMounted(async () => {
     console.log('Iniciando carga de datos...')
@@ -250,8 +359,6 @@ async function cargarUsuariosDelAdministrador() {
 }
 
 const usuarios = ref([])
-
-
 const filtroCedula = ref('')
 const filtroCargo = ref('')
 
@@ -273,7 +380,6 @@ const usuariosFiltrados = computed(() => {
         return coincideCedula && coincideCargo
     })
 })
-
 </script>
 
 <style scoped>
