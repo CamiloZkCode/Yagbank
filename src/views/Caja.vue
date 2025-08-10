@@ -1,3 +1,8 @@
 <template>
-    <h1>Cuadre</h1>
+    <AdminCaja />
 </template>
+
+<script setup>
+import AdminCaja from '../components/Admin/AdminCaja.vue';
+
+</script>

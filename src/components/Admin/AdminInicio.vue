@@ -6,7 +6,7 @@
 
             <div class="filtros">
                 <div class="filtro-nombre">
-                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" />
+                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" v-model="filtroNombre" />
                     <span class="material-symbols-outlined">search</span>
                 </div>
             </div>
@@ -25,7 +25,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <template v-for="Clientes in CreditoCliente" :key="Clientes.id_cliente">
+                        <template v-for="Clientes in ClienteFiltro" :key="Clientes.id_cliente">
                             <tr>
                                 <td class="columna-min ">
                                     <div class="estado">
@@ -130,6 +130,16 @@ const generarCuotasPorCliente = (cuotas) => {
     const num = parseInt(cuotas) || 0
     return Array.from({ length: num }, (_, i) => i + 1)
 }
+
+
+//Filtro Nombre
+const filtroNombre = ref('')
+const ClienteFiltro = computed(() =>
+    CreditoCliente.value.filter(Clientes =>
+        Clientes.nombre.toLowerCase().includes(filtroNombre.value.toLowerCase())
+    )
+)
+
 </script>
 
 

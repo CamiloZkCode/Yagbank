@@ -34,7 +34,7 @@
         <div class="contenedor-tabla">
             <div class="filtros">
                 <div class="filtro-nombre">
-                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" />
+                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" v-model="filtroNombre" />
                     <span class="material-symbols-outlined">search</span>
                 </div>
             </div>
@@ -55,7 +55,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <template v-for="prestamo in PrestamosFuncionario" :key="prestamo.id_prestamo">
+                        <template v-for="prestamo in FuncionarioFiltro" :key="prestamo.id_prestamo">
                             <tr>
                                 <td>{{ prestamo.fecha_solicitud }}</td>
                                 <td>{{ prestamo.nombre_funcionario }}</td>
@@ -173,7 +173,7 @@ const PrestamosFuncionario = ref([
     {
         id_prestamo: 1,
         cedula_funcionario: '100200300',
-        nombre_funcionario: 'Carlos Pérez',
+        nombre_funcionario: 'Ana Maria',
         autorizado_por: 'Camilo',
         valor_prestamo: 1000,
         abono_total: 400,
@@ -184,7 +184,7 @@ const PrestamosFuncionario = ref([
     {
         id_prestamo: 2,
         cedula_funcionario: '100200300',
-        nombre_funcionario: 'Carlos Pérez',
+        nombre_funcionario: 'Luisa Garcia',
         autorizado_por: 'Camilo',
         valor_prestamo: 1000,
         abono_total: 400,
@@ -206,7 +206,7 @@ const PrestamosFuncionario = ref([
     {
         id_prestamo: 4,
         cedula_funcionario: '100200300',
-        nombre_funcionario: 'Carlos Pérez',
+        nombre_funcionario: 'Jorge Hoyos',
         autorizado_por: 'Camilo',
         valor_prestamo: 1000,
         abono_total: 400,
@@ -239,6 +239,13 @@ const PrestamosFuncionario = ref([
 ])
 
 
+
+const filtroNombre = ref('')
+const FuncionarioFiltro = computed(() =>
+    PrestamosFuncionario.value.filter(prestamo =>
+        prestamo.nombre_funcionario.toLowerCase().includes(filtroNombre.value.toLowerCase())
+    )
+)
 </script>
 
 

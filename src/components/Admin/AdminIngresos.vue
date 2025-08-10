@@ -178,7 +178,7 @@ const guardarIngreso = () => {
 const filtroNombre = ref('')
 const ingresosFiltrados = computed(() =>
     listaIngresos.value.filter(ing =>
-        ing.nombre.toLowerCase().includes(filtroNombre.value.toLowerCase())
+        ing.tipo.toLowerCase().includes(filtroNombre.value.toLowerCase())
     )
 )
 </script>

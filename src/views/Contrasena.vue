@@ -1,78 +1,49 @@
-    <template>
-        <main>
-            <div class="contenedor">
-                <div class="toggle-box">
-                    <div class="toggle-panel">
-                        <h1>¡ Bienvenido !</h1>
-                        <h2 class="empresa">YAG<span class="danger"> BANK</span></h2>
-                        <img class="logo" src="@/assets/img/logo.png" alt="logo" />
-                        <p class="mensaje">Ingrese sus datos personales para usar todas las funciones del sitio</p>
-                    </div>
-                </div>
-
-                <div class="box-formulario">
-                    <form @submit.prevent="handleLogin">
-                        <h1>Inicio Sesión</h1>
-                        <div class="input-box">
-                            <input type="text" v-model="username" placeholder="Usuario" required />
-                            <span class="material-symbols-outlined">person</span>
-                        </div>
-
-                        <div class="input-box">
-                            <input :type="showPassword ? 'text' : 'password'" v-model="password"
-                                placeholder="Contraseña" required />
-                            <span class="material-symbols-outlined" @click="showPassword = !showPassword"
-                                style="cursor: pointer;">
-                                {{ showPassword ? 'visibility' : 'visibility_off' }}
-                            </span>
-                        </div>
-
-                        <button type="submit" class="btn-sesion">Iniciar</button>
-                        <p v-if="error" class="error">{{ error }}</p>
-                    </form>
+<template>
+    <main>
+        <div class="contenedor">
+            <div class="toggle-box">
+                <div class="toggle-panel">
+                    <h1>¡Nueva!</h1>
+                    <h2 class="empresa">YAG<span class="danger"> BANK</span></h2>
+                    <img class="logo" src="@/assets/img/logo.png" alt="logo" />
+                    <p class="mensaje">Por favor ingresa tu nueva contraseña</p>
                 </div>
             </div>
-        </main>
-    </template>
 
+            <div class="box-formulario">
+                <form @submit.prevent="handleChangePassword">
+                    <h1>Cambiar Contraseña</h1>
 
+                    <div class="input-box">
+                        <input :type="showPassword ? 'text' : 'password'" v-model="nuevaContrasena"
+                            placeholder="Nueva contraseña" required minlength="6" />
+                        <span class="material-symbols-outlined" @click="showPassword = !showPassword"
+                            style="cursor: pointer;">
+                            {{ showPassword ? 'visibility' : 'visibility_off' }}
+                        </span>
+                    </div>
 
+                    <div class="input-box">
+                        <input :type="showPasswordConfirm ? 'text' : 'password'" v-model="confirmarContrasena"
+                            placeholder="Confirmar nueva contraseña" required minlength="6" />
+                        <span class="material-symbols-outlined" @click="showPasswordConfirm = !showPasswordConfirm"
+                            style="cursor: pointer;">
+                            {{ showPasswordConfirm ? 'visibility' : 'visibility_off' }}
+                        </span>
+                    </div>
+
+                    <button type="submit" class="btn-sesion">Actualizar contraseña</button>
+
+                    <p v-if="error" class="error">{{ error }}</p>
+                    <p v-if="exito" class="exito">{{ exito }}</p>
+                </form>
+            </div>
+        </div>
+    </main>
+</template>
 
 <script setup>
 
-/*========AUTENTIFICACION LOGIN ===========*/
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-
-const router = useRouter()
-const auth = useAuthStore()
-
-const username = ref('')
-const password = ref('')
-const error = ref('')
-const loading = ref(false)
-
-const handleLogin = async () => {
-    try {
-        if (!username.value || !password.value) {
-            error.value = 'Por favor ingrese usuario y contraseña'
-            return
-        }
-
-        loading.value = true
-        error.value = ''
-
-        await auth.login(username.value, password.value)
-        router.push('/inicio')
-    } catch (err) {
-        error.value = err.message || 'Error al iniciar sesión'
-    } finally {
-        loading.value = false
-    }
-}
-/*=====ESTADO CONTRASEÑA =====*/
-const showPassword = ref(false)
 </script>
 
 <style scoped>
@@ -324,4 +295,3 @@ button:hover {
 
 }
 </style>
-

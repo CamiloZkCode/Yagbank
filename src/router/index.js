@@ -1,114 +1,110 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from "vue-router";
 
 // Layout
-import LayoutGeneral from '@/layouts/LayoutGeneral.vue'
+import LayoutGeneral from "@/layouts/LayoutGeneral.vue";
 
 // Vistas
-import Login from '@/views/Login.vue'
-import Inicio from '@/views/Inicio.vue'
-import GestionUsuarios from '@/views/GestionUsuarios.vue'
-import CreditoCliente from '@/views/CreditoClientes.vue'
-import ClientesNuevos from '@/views/NuevosClientes.vue'
-import CreditoFuncionario from '@/views/CreditoFuncionario.vue'
-import InformeGastos from '@/views/InformeGastos.vue'
-import InformeIngresos from '@/views/InformeIngresos.vue'
-import Caja from '@/views/Caja.vue'
-import CajaMes from '@/views/CajaMes.vue'
-import Politicas from '@/views/Politicas.vue'
+import Login from "@/views/Login.vue";
+import Inicio from "@/views/Inicio.vue";
+import GestionUsuarios from "@/views/GestionUsuarios.vue";
+import CreditoCliente from "@/views/CreditoClientes.vue";
+import ClientesNuevos from "@/views/NuevosClientes.vue";
+import CreditoFuncionario from "@/views/CreditoFuncionario.vue";
+import InformeGastos from "@/views/InformeGastos.vue";
+import InformeIngresos from "@/views/InformeIngresos.vue";
+import Caja from "@/views/Caja.vue";
+import CajaMes from "@/views/CajaMes.vue";
+import Politicas from "@/views/Politicas.vue";
+import Contrasena from "@/views/Contrasena.vue";
 
 const routes = [
   {
-    path: '/',
-    name: 'Login',
-    component: Login
+    path: "/",
+    name: "Login",
+    component: Login,
   },
   {
-    path: '/inicio',
+    path: "/cambiar-contrasena",
+    name: "Contrasena",
+    component: Contrasena,
+    meta: { requiereAuth: true }, 
+  },
+  {
+    path: "/inicio",
+    component: LayoutGeneral,
+    meta: { requiereAuth: true },
+    children: [{ path: "", name: "Inicio", component: Inicio }],
+  },
+  {
+    path: "/usuarios",
     component: LayoutGeneral,
     meta: { requiereAuth: true },
     children: [
-      { path: '', name: 'Inicio', component: Inicio }
-    ]
+      { path: "", name: "GestionUsuarios", component: GestionUsuarios },
+    ],
   },
   {
-    path: '/usuarios',
+    path: "/credito-cliente",
+    component: LayoutGeneral,
+    meta: { requiereAuth: true },
+    children: [{ path: "", name: "CreditoCliente", component: CreditoCliente }],
+  },
+  {
+    path: "/clientes-nuevos",
+    component: LayoutGeneral,
+    meta: { requiereAuth: true },
+    children: [{ path: "", name: "ClientesNuevos", component: ClientesNuevos }],
+  },
+  {
+    path: "/credito-funcionario",
     component: LayoutGeneral,
     meta: { requiereAuth: true },
     children: [
-      { path: '', name: 'GestionUsuarios', component: GestionUsuarios }
-    ]
+      { path: "", name: "CreditoFuncionario", component: CreditoFuncionario },
+    ],
   },
   {
-    path: '/credito-cliente',
+    path: "/ingresos",
     component: LayoutGeneral,
     meta: { requiereAuth: true },
     children: [
-      { path: '', name: 'CreditoCliente', component: CreditoCliente }
-    ]
+      { path: "", name: "InformeIngresos", component: InformeIngresos },
+    ],
   },
   {
-    path: '/clientes-nuevos',
+    path: "/gastos",
     component: LayoutGeneral,
     meta: { requiereAuth: true },
-    children: [
-      { path: '', name: 'ClientesNuevos', component: ClientesNuevos }
-    ]
+    children: [{ path: "", name: "InformeGastos", component: InformeGastos }],
   },
   {
-    path: '/credito-funcionario',
+    path: "/caja",
     component: LayoutGeneral,
     meta: { requiereAuth: true },
-    children: [
-      { path: '', name: 'CreditoFuncionario', component: CreditoFuncionario }
-    ]
-  },
-  {
-    path: '/ingresos',
-    component: LayoutGeneral,
-    meta: { requiereAuth: true },
-    children: [
-      { path: '', name: 'InformeIngresos', component: InformeIngresos }
-    ]
-  },
-  {
-    path: '/gastos',
-    component: LayoutGeneral,
-    meta: { requiereAuth: true },
-    children: [
-      { path: '', name: 'InformeGastos', component: InformeGastos }
-    ]
-  },
-  {
-    path: '/caja',
-    component: LayoutGeneral,
-    meta: { requiereAuth: true },
-    children: [
-      { path: '', name: 'Caja', component: Caja }
-    ]
+    children: [{ path: "", name: "Caja", component: Caja }],
   },
 
-   {
-    path: '/caja-mes',
+  {
+    path: "/caja-mes",
     component: LayoutGeneral,
     meta: { requiereAuth: true },
-    children: [
-      { path: '', name: 'CajaMes', component: CajaMes }
-    ]
+    children: [{ path: "", name: "CajaMes", component: CajaMes }],
   },
   {
-    path: '/politicas',
+    path: "/politicas",
     component: LayoutGeneral,
     meta: { requiereAuth: true },
-    children: [
-      { path: '', name: 'Politicas', component: Politicas }
-    ]
-  }
-]
+    children: [{ path: "", name: "Politicas", component: Politicas }],
+  },
+];
 
 // ⚠️ ESTA PARTE FALTABA
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
-export default router
+
+
+
+export default router;
