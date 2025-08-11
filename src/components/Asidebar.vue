@@ -7,43 +7,43 @@
             </div>
             <div class="nav-links">
                 <router-link to="/inicio" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">browse</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Home.png" alt="">
                 </router-link>
 
                 <router-link to="/usuarios" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">supervisor_account</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Usuario.png" alt="">
                 </router-link>
 
                 <router-link to="/credito-cliente" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">add_card</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Credito.png" alt="">
                 </router-link>
 
                 <router-link to="/credito-funcionario" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">interactive_space</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/CreditoFuncionario.png" alt="">
                 </router-link>
 
                 <router-link to="/ingresos" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">chart_data</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Ingre.png" alt="">
                 </router-link>
 
                 <router-link to="/gastos" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">request_quote</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Gastos.png" alt="">
                 </router-link>
 
                 <router-link to="/caja" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">point_of_sale</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Caja1.png" alt="">
                 </router-link>
 
                 <router-link to="/caja-mes" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">order_approve</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/CajaMensual.png" alt="">
                 </router-link>
 
                 <router-link to="/politicas" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">info</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Info.png" alt="">
                 </router-link>
 
                 <a href="#" @click.prevent="handleLogout" class="mi-enlace">
-                    <span class="material-symbols-outlined">logout</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Logout.png" alt="">
                 </a>
 
 
@@ -64,54 +64,54 @@
 
             <div class="sidebar">
                 <router-link to="/inicio" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">browse</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Home.png" alt="">
                     <h3>Inicio</h3>
                 </router-link>
 
                 <router-link v-if="auth.isAdmin || auth.isSupervisor" to="/usuarios" class="mi-enlace"
                     active-class="active">
-                    <span class="material-symbols-outlined">supervisor_account</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Usuario.png" alt="">
                     <h3>Gestion Usuarios</h3>
                 </router-link>
 
                 <router-link to="/credito-cliente" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">add_card</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Credito.png" alt="">
                     <h3>Credito Cliente</h3>
                 </router-link>
 
                 <router-link to="/credito-funcionario" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">payments</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/CreditoFuncionario.png" alt="">
                     <h3>Credito Funcionario</h3>
                 </router-link>
 
                 <router-link v-if="auth.isAdmin" to="/ingresos" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">chart_data</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Ingre.png" alt="">
                     <h3>Informe Ingresos</h3>
                 </router-link>
 
                 <router-link to="/gastos" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">request_quote</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Gastos.png" alt="">
                     <h3>informe Gastos</h3>
                 </router-link>
 
                 <router-link to="/caja" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">point_of_sale</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Caja1.png" alt="">
                     <h3>Caja</h3>
                 </router-link>
 
 
                 <router-link to="/caja-mes" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">order_approve</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/CajaMensual.png" alt="">
                     <h3>Caja Mensual</h3>
                 </router-link>
 
                 <router-link to="/politicas" class="mi-enlace" active-class="active">
-                    <span class="material-symbols-outlined">info</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Info.png" alt="">
                     <h3>Politicas</h3>
                 </router-link>
 
                 <a href="#" @click.prevent="handleLogout" class="mi-enlace">
-                    <span class="material-symbols-outlined">logout</span>
+                    <img class="icono-sidebar" src="/src/assets/icons/Logout.png" alt="">
                     <h3>Cerrar Sesión</h3>
                 </a>
 
@@ -281,6 +281,13 @@ aside .sidebar .mi-enlace {
     transition: all 300ms ease;
 }
 
+.icono-sidebar {
+    width: 1.6rem;
+    height: 1.6rem;
+    object-fit: contain;
+
+}
+
 aside .sidebar .mi-enlace span {
     font-size: 1.6rem;
     transition: all 300ms ease;
@@ -364,6 +371,13 @@ aside .sidebar .mi-enlace:hover span {
         margin-right: 1rem;
     }
 
+
+    .icono-sidebar {
+        width: 2.5rem;
+        height: 2.5rem;
+        object-fit: contain;
+    }
+
     .nav-links {
         display: flex;
         overflow-x: auto;
@@ -388,8 +402,7 @@ aside .sidebar .mi-enlace:hover span {
     }
 
     .nav-links .mi-enlace.active {
-        background: var(--color-azul-1);
-        color: var(--color-blanco);
+        background: var(--color-dark-variant);
     }
 
     .nav-links .mi-enlace span {

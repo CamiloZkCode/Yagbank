@@ -202,7 +202,7 @@ button {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    padding: 0.8rem 1rem;
+    padding: 1.2rem;
     font-size: 1rem;
     background: var(--color-azul-1);
     color: var(--color-blanco);

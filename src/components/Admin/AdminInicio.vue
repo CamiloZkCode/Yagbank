@@ -17,9 +17,9 @@
                         <tr>
                             <th class="columna-min">N°</th>
                             <th>Cliente</th>
-                            <th>Prestamo</th>
-                            <th>Supervisor</th>
-                            <th>Asesor</th>
+                            <th class="columna-nota">Nota</th>
+                            <th>Abono</th>
+                            <th>Saldo</th>
                             <th></th>
                             <th></th>
                         </tr>
@@ -27,22 +27,40 @@
                     <tbody>
                         <template v-for="Clientes in ClienteFiltro" :key="Clientes.id_cliente">
                             <tr>
-                                <td class="columna-min ">
-                                    <div class="estado">
+                                <td class="columna-min">
+                                    <div class="estado" @click="toggleExpand(Clientes.id_cliente)">
+                        
                                         {{ Clientes.cuotas_pagadas }}
                                     </div>
                                 </td>
                                 <td>{{ Clientes.nombre }}</td>
-                                <td>${{ Clientes.prestamo_total }}</td>
-                                <td>{{ Clientes.nombre }}</td>
-                                <td>{{ Clientes.nombre }}</td>
                                 <td>
-                                    <span class="material-symbols-outlined ver-mas"
-                                        @click="toggleExpand(Clientes.id_cliente)">
-                                        {{ usuarioExpandido === Clientes.id_cliente ? 'keyboard_double_arrow_up' :
-                                            'keyboard_double_arrow_down' }}
+                                    <span class="material-symbols-outlined up" >
+                                        arrow_warm_up
+                                    </span>
+
+                                    <span class="material-symbols-outlined block">
+                                        block
+                                    </span>
+                                    <span class="material-symbols-outlined down">
+                                        arrow_cool_down
                                     </span>
                                 </td>
+                                <td>
+                                    <div class="contenedor-pagos">
+                                        ${{ Clientes.abono }}
+                                        <button @click="abrirModalPago(Clientes)">Pagar</button>
+                                    </div>
+
+                                </td>
+                                <td>
+                                    <div class="contenedor-deuda">
+                                        ${{ Clientes.prestamo_total - Clientes.abono_total }}
+                                        <label> ${{ Clientes.abono_total }}</label>
+                                    </div>
+
+                                </td>
+
                             </tr>
                             <tr v-if="usuarioExpandido === Clientes.id_cliente">
                                 <td colspan="7" class="fila-expandida">
@@ -119,10 +137,17 @@ const toggleExpand = (id) => {
 
 // Datos de prueba
 const CreditoCliente = ref([
-    { id_cliente: 1001, nombre: 'María Gómez', telefono: '3123456789', direccion: 'Calle 10 #15-20', casa: 'Casa 1', numero_cuotas: 20, cuotas_pagadas: 5, cuotas_deberia: 8, abono: 100000, abono_total: 500000, prestamo_total: 1200000, fecha_prestamo: '2025-06-15', fecha_finalizacion: '2025-11-30' },
-    { id_cliente: 1002, nombre: 'Luis Martínez', telefono: '3132223344', direccion: 'Carrera 8 #45-12', casa: 'Casa 2', numero_cuotas: 24, cuotas_pagadas: 10, cuotas_deberia: 12, abono: 150000, abono_total: 1000000, prestamo_total: 1500000, fecha_prestamo: '2025-05-01', fecha_finalizacion: '2025-10-20' },
-    { id_cliente: 1003, nombre: 'Ana Torres', telefono: '3149998877', direccion: 'Diagonal 3 #21-18', casa: 'Casa 3', numero_cuotas: 18, cuotas_pagadas: 18, cuotas_deberia: 18, abono: 120000, abono_total: 1080000, prestamo_total: 1080000, fecha_prestamo: '2025-02-10', fecha_finalizacion: '2025-07-10' },
-    { id_cliente: 1004, nombre: 'Jorge Herrera', telefono: '3118887766', direccion: 'Av. Siempre Viva #123', casa: 'Casa 4', numero_cuotas: 12, cuotas_pagadas: 3, cuotas_deberia: 6, abono: 90000, abono_total: 270000, prestamo_total: 600000, fecha_prestamo: '2025-07-01', fecha_finalizacion: '2025-12-15' }
+    { id_cliente: 1001, nombre: 'María Gómez', telefono: '3123456789', direccion: 'Calle 10 #15-20', casa: 'Casa 1', numero_cuotas: 20, cuotas_pagadas: 5, cuotas_deberia: 8, abono: 100, abono_total: 500, prestamo_total: 1200, fecha_prestamo: '2025-06-15', fecha_finalizacion: '2025-11-30' },
+    { id_cliente: 1002, nombre: 'Luis Martínez', telefono: '3132223344', direccion: 'Carrera 8 #45-12', casa: 'Casa 2', numero_cuotas: 24, cuotas_pagadas: 10, cuotas_deberia: 12, abono: 150, abono_total: 300, prestamo_total: 1500, fecha_prestamo: '2025-05-01', fecha_finalizacion: '2025-10-20' },
+    { id_cliente: 1003, nombre: 'Ana Torres', telefono: '3149998877', direccion: 'Diagonal 3 #21-18', casa: 'Casa 3', numero_cuotas: 18, cuotas_pagadas: 18, cuotas_deberia: 18, abono: 120, abono_total: 240, prestamo_total: 1000, fecha_prestamo: '2025-02-10', fecha_finalizacion: '2025-07-10' },
+    { id_cliente: 1004, nombre: 'Jorge Herrera', telefono: '3118887766', direccion: 'Av. Siempre Viva #123', casa: 'Casa 4', numero_cuotas: 12, cuotas_pagadas: 3, cuotas_deberia: 6, abono: 90, abono_total: 270, prestamo_total: 600, fecha_prestamo: '2025-07-01', fecha_finalizacion: '2025-12-15' },
+    { id_cliente: 1005, nombre: 'María Gómez', telefono: '3123456789', direccion: 'Calle 10 #15-20', casa: 'Casa 1', numero_cuotas: 20, cuotas_pagadas: 5, cuotas_deberia: 8, abono: 100, abono_total: 500, prestamo_total: 1200, fecha_prestamo: '2025-06-15', fecha_finalizacion: '2025-11-30' },
+    { id_cliente: 1006, nombre: 'Luis Martínez', telefono: '3132223344', direccion: 'Carrera 8 #45-12', casa: 'Casa 2', numero_cuotas: 24, cuotas_pagadas: 10, cuotas_deberia: 12, abono: 150, abono_total: 300, prestamo_total: 1500, fecha_prestamo: '2025-05-01', fecha_finalizacion: '2025-10-20' },
+    { id_cliente: 1007, nombre: 'Ana Torres', telefono: '3149998877', direccion: 'Diagonal 3 #21-18', casa: 'Casa 3', numero_cuotas: 18, cuotas_pagadas: 18, cuotas_deberia: 18, abono: 120, abono_total: 240, prestamo_total: 1000, fecha_prestamo: '2025-02-10', fecha_finalizacion: '2025-07-10' },
+    { id_cliente: 1008, nombre: 'Jorge Herrera', telefono: '3118887766', direccion: 'Av. Siempre Viva #123', casa: 'Casa 4', numero_cuotas: 12, cuotas_pagadas: 3, cuotas_deberia: 6, abono: 90, abono_total: 270, prestamo_total: 600, fecha_prestamo: '2025-07-01', fecha_finalizacion: '2025-12-15' }
+
+
+
 ])
 
 // Generador de espacio de cuotas
@@ -233,16 +258,19 @@ const ClienteFiltro = computed(() =>
 }
 
 table tbody td {
-    height: 2rem;
+    height: 1rem;
     border-bottom: 1px solid var(--color-light);
     color: var(--color-dark-variant);
 }
 
 
-
 .contenedor-tabla table .columna-min {
-    width: 2rem;
+    width: 40px;
     font-weight: 600;
+}
+
+.contenedor-tabla table .columna-nota {
+    width: 100px;
 }
 
 .contenedor-tabla .tabla-clientes .estado {
@@ -251,13 +279,45 @@ table tbody td {
     border-radius: var(--card-border-radius);
     padding: 0.5rem 0rem;
     margin: 0.5rem 0rem;
+    cursor: pointer;
 }
-
 
 table tbody tr:last-child td {
     border: none;
 }
 
+.contenedor-tabla .tabla-clientes .up{
+    color: var(--color-aprobado-1);
+}
+
+
+.contenedor-tabla .tabla-clientes .block{
+    color: var(--color-rojo-5);
+}
+
+.contenedor-tabla .tabla-clientes .down{
+    color: var(--color-amarillo-2);
+}
+button {
+    cursor: pointer;
+    border: none;
+    background: transparent;
+}
+
+.contenedor-pagos,
+.contenedor-deuda {
+    display: flex;
+    flex-direction: column;
+    margin: 0.4rem 0;
+}
+
+
+.contenedor-deuda{
+    border: 1px solid var(--color-light);
+}
+.contenedor-deuda label{
+    border-top: 1px solid var(--color-light);
+}
 
 .ver-mas {
     cursor: pointer;
@@ -356,28 +416,31 @@ table tbody tr:last-child td {
         position: relative;
     }
 
-    .contenedor-tabla .tabla-clientes {
-        min-width: 190%;
-    }
+      .contenedor-tabla .tabla-clientes {
+        min-width: 120%;
 
+    }
     .contenedor-tabla table {
-        width: 100%;
         margin-top: 1rem;
-        font-size: 1.2rem;
+        font-size: 1rem;
     }
 
-    .contenedor-tabla .tabla-clientes td,
-    th {
-        width: 100;
-        word-wrap: break-word;
-        white-space: normal;
-    }
-
-    .contenedor-tabla .columna-min {
+    .contenedor-tabla .tabla-clientes .columna-min {
         white-space: nowrap;
         text-align: center;
         font-size: 1rem;
+        width: 30px;
     }
+
+    .contenedor-tabla .tabla-clientes td,
+    .contenedor-tabla .tabla-clientes th {
+        white-space: normal;
+        word-break: break-word; 
+        text-align: center;
+    }
+
+
+
 
     .contenedor-tabla table span {
         font-size: 1.5rem;
@@ -393,6 +456,7 @@ table tbody tr:last-child td {
 
     .fila-expandida .info-extra {
         white-space: initial;
+        font-size: 1rem;
     }
 }
 </style>

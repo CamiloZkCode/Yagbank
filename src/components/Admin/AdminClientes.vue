@@ -101,7 +101,7 @@
 
                 <div class="cambiar-ruta">
                     <button class="editar-ruta">
-                        <span class="material-symbols-outlined edit">edit</span>
+                        <img class="icono-botones" src="/src/assets/icons/edit.png" alt="">
                     </button>
                 </div>
             </div>
@@ -302,7 +302,6 @@ const CreditoCliente = ref([
 
 
 <style scoped>
-
 .contenedor-botones {
     margin-top: 1.5rem;
     align-items: center;
@@ -321,7 +320,7 @@ button {
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    padding: 0.8rem 1rem;
+    padding: 1.2rem;
     font-size: 1rem;
     background: var(--color-azul-1);
     color: var(--color-blanco);
@@ -436,13 +435,21 @@ input[type="number"]::-webkit-inner-spin-button {
     cursor: pointer;
 }
 
-.cambiar-ruta{
-   margin-right: 2rem;
+.cambiar-ruta {
+    margin-right: 2rem;
 }
 
-.editar-ruta{
-    background:var(--color-amarillo-2);
+.editar-ruta {
+    background: var(--color-amarillo-2);
     color: var(--color-blanco);
+}
+
+
+.icono-botones {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+    filter: drop-shadow(1px 1px 5px var(--color-oscuro));
 }
 
 
@@ -547,10 +554,11 @@ table tbody tr:last-child td {
     .modal-content {
         width: 90%;
         height: auto;
-        max-height: 90vh;
+        max-height: 70vh;
         overflow-y: auto;
         padding: 1.5rem;
         font-size: 0.9rem;
+        margin-top: 4rem;
     }
 
 
