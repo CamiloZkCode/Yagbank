@@ -187,6 +187,7 @@ const usuario = ref({
     id_supervisor: "",
 })
 
+// Datos del usuario a Editar
 const usuarioEditado = ref({
     id_usuario: '',
     nombre: '',

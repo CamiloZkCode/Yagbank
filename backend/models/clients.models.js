@@ -5,7 +5,7 @@ async function crearCliente(cliente) {
     documento_cliente, nombre, apellido,
     direccion_casa, direccion_trabajo, telefono, ocupacion,
     referencia, fecha_creacion, url_cedula, url_negocio,
-    url_documentonegocio, estado, creado_por, id_ruta
+    url_documentonegocio, creado_por, estado,  id_asesor
   } = cliente;
 
   const query = `
@@ -13,7 +13,7 @@ async function crearCliente(cliente) {
       documento_cliente, nombre, apellido,
 direccion_casa, direccion_trabajo, telefono, ocupacion,
       referencia, fecha_creacion, url_cedula, url_negocio,
-      url_documentonegocio, estado, creado_por, id_ruta
+      url_documentonegocio, creado_por, estado, id_asesor
     )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
@@ -22,7 +22,7 @@ direccion_casa, direccion_trabajo, telefono, ocupacion,
     documento_cliente, nombre, apellido,
     direccion_casa, direccion_trabajo, telefono, ocupacion,
     referencia, fecha_creacion, url_cedula, url_negocio,
-    url_documentonegocio, estado, creado_por, id_ruta
+    url_documentonegocio, estado, creado_por, id_asesor
   ];
 
   await db.query(query, values);

@@ -15,10 +15,10 @@
         <!-- Modal Cliente -->
         <div v-if="mostrarCliente" class="modal-overlay">
             <div class="modal-content">
-                <span class="material-symbols-outlined close-icon" @click="mostrarCliente = false">close</span>
+                <span class="material-symbols-outlined close-icon" @click="mostrarCliente = false; limpiarFormulario()">close</span>
                 <h2>Registrar Cliente</h2>
                 <form @submit.prevent="guardarCliente" enctype="multipart/form-data">
-                    <input v-model="cliente.documento" type="number" placeholder="Documento" required />
+                    <input v-model="cliente.documento_cliente" type="number" placeholder="Documento" required />
                     <input v-model="cliente.nombre" placeholder="Nombre" required />
                     <input v-model="cliente.apellido" placeholder="Apellido" required />
                     <input v-model="cliente.direccion_casa" placeholder="Dirección casa" />
@@ -26,11 +26,19 @@
                     <input v-model="cliente.telefono" placeholder="Teléfono" />
                     <input v-model="cliente.ocupacion" placeholder="Ocupación" />
                     <input v-model="cliente.referencia" placeholder="Referencia" />
+                    <!--Selecciona un asesor-->
+                    <label>Seleccionar un Asesor</label> <!--Cambiar esto¡¡¡¡¡¡-->
 
-                    <label>Selecciona la Ruta</label>
-                    <select v-model="cliente.id_ruta">
-                        <option disabled value="">Seleccione una ruta</option>
-                        <option v-for="ruta in rutas" :key="ruta.id" :value="ruta.id">{{ ruta.nombre }}</option>
+                    <label>Selecciona el supervisor</label>
+                    <select v-model="cliente.id_supervisor">
+                        <option disabled value="">Seleccione un supervisor</option>
+                        <option v-for="sup in supervisores" :key="sup.id" :value="sup.id">{{ sup.nombre }}</option>
+                    </select>
+
+                    <label>Selecciona el asesor</label>
+                    <select v-model="cliente.id_asesor">
+                        <option disabled value="">Seleccione un asesor</option>
+                        <option v-for="asesor in asesores" :key="asesor.id" :value="asesor.id">{{ asesor.nombre }}</option>
                     </select>
 
                     <label>Foto de la cédula:</label>
@@ -163,8 +171,14 @@
 
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch,onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { crearClientes   } from '@/services/clientes'
+import { obtenerSupervisores   } from '@/services/usuario'
+import alertify from 'alertifyjs'
+import 'alertifyjs/build/css/alertify.css'
+
+
 
 const authStore = useAuthStore()
 const usuarioLogueado = computed(() => authStore.user)
@@ -173,9 +187,50 @@ const usuarioLogueado = computed(() => authStore.user)
 const mostrarCliente = ref(false)
 const mostrarCredito = ref(false)
 
+
+//Estados Reactivos
+const supervisores = ref([]) // Cargar lista de supervisores
+
+
+
+
+// Rutas
+const rutas = ref([
+    { id: 1, nombre: 'Ruta 1' },
+    { id: 2, nombre: 'Ruta 2' }
+])
+//Cliente//
+//Crear Cliente//
+const guardarCliente = async() => {
+    try{
+        const guardar =await crearClientes(cliente.value)
+        console.log('Cliente registrado:', cliente.value)
+
+         // ✅ La alerta de éxito ahora contiene la lógica para cerrar el modal
+        alertify.alert(
+            'Cliente registrado con éxito',
+            function () {
+                // ✅ Esta función se ejecuta SÓLO cuando el usuario hace clic en 'OK'.
+                // Aquí cerramos el modal principal, limpiamos el formulario y recargamos los datos.
+                mostrarUsuario.value = false;
+                limpiarFormulario();
+                cargarSupervisores
+            }
+        ).set({
+            transition: 'fade',
+            movable: false,
+            resizable: false,
+            pinnable: false,
+            closable: true,
+        });
+    }catch (error){
+        console.error(error);
+    } 
+}
+
 // Cliente
 const cliente = ref({
-    documento: '',
+    documento_cliente: '',
     nombre: '',
     apellido: '',
     direccion_casa: '',
@@ -183,18 +238,29 @@ const cliente = ref({
     telefono: '',
     ocupacion: '',
     referencia: '',
-    id_ruta: ''
+    id_asesor: ''
 })
+//Limpiar Formulario del cliente
+const limpiarFormulario = () => {
+    cliente.value = {
+        documento_cliente: '',
+        nombre: '',
+        apellido: '',
+        direccion_casa: '',
+        direccion_trabajo: '',
+        telefono: '',
+        ocupacion: '',
+        referencia: '',
+        id_asesor: ''
+    };
+};
 
-// Rutas
-const rutas = ref([
-    { id: 1, nombre: 'Ruta 1' },
-    { id: 2, nombre: 'Ruta 2' }
-])
-
-const guardarCliente = () => {
-    console.log('Cliente registrado:', cliente.value)
-    mostrarCliente.value = false
+const cargarSupervisores = async () => {
+    try {
+        supervisores.value = await obtenerSupervisores()
+    } catch (error) {
+        console.error('Error al obtener supervisores:', error)
+    }
 }
 
 const obtenerFechaActual = () => {
@@ -297,6 +363,16 @@ const CreditoCliente = ref([
     { id_cliente: 1003, nombre: 'Ana Torres', telefono: '3149998877', direccion: 'Diagonal 3 #21-18', casa: 'Casa 3', numero_cuotas: 18, cuotas_pagadas: 18, cuotas_deberia: 18, abono: 120, abono_total: 300, prestamo_total: 1500, fecha_prestamo: '2025-02-10', fecha_finalizacion: '2025-07-10' },
     { id_cliente: 1004, nombre: 'Jorge Herrera', telefono: '3118887766', direccion: 'Av. Siempre Viva #123', casa: 'Casa 4', numero_cuotas: 12, cuotas_pagadas: 3, cuotas_deberia: 6, abono: 90, abono_total: 270, prestamo_total: 900, fecha_prestamo: '2025-07-01', fecha_finalizacion: '2025-12-15' }
 ])
+
+onMounted(async () => {
+    console.log('Iniciando carga de datos...')
+    try {
+        await cargarSupervisores()
+        console.log('Datos cargados completamente')
+    } catch (error) {
+        console.error('Error en mounted:', error)
+    }
+})
 
 </script>
 
