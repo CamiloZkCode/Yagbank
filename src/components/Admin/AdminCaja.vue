@@ -4,43 +4,43 @@
         <div class="contenedor-caja">
             <div class="cabecera-formulario">
                 <div class="fecha-centrada">{{ formatoFecha(formulario.fecha) }}</div>
-                   <router-link to="/caja-mes" class="enlace-calendario"> <span class="icono-calendario material-symbols-outlined">
-                    calendar_month
-                </span> </router-link>
+                <router-link to="/caja-mes" class="enlace-calendario">
+                    <img class="icono-boton icono-calendario" src="/src/assets/icons/CajaMensual.png" alt="">
+                </router-link>
             </div>
 
-            <div class="caja-diaria">
+            <div class="caja-diaria ">
                 <form action="">
                     <div class="punto-formulario">
-                        <label>Ingresos:</label>
+                        <label class="entra">Ingresos:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
                     <div class="punto-formulario">
-                        <label>Caja Inicial:</label>
+                        <label class="entra">Caja Inicial:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
                     <div class="punto-formulario">
-                        <label>Recogida:</label>
+                        <label class="entra">Recogida:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
                     <div class="punto-formulario">
-                        <label>Prestamos:</label>
+                        <label class="sale">Prestamos:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
                     <div class="punto-formulario">
-                        <label>Gastos:</label>
+                        <label class="sale">Gastos:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
                     <div class="punto-formulario">
-                        <label>Caja:</label>
+                        <label class="sale">Clavos Total:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
                     <div class="punto-formulario">
-                        <label>Clavos Total:</label>
+                        <label class="sale">Clientes Clavo:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
                     <div class="punto-formulario">
-                        <label>Clientes Clavo:</label>
+                        <label class="entra">Caja:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
 
@@ -54,26 +54,26 @@
 </template>
 
 <script setup>
-import { ref} from 'vue';
+import { ref } from 'vue';
 
 const valorDesdeBD = ref(0); // Este valor vendría de tu base de datos
 
 const formulario = ref({
-  fecha: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
-  ingresos: 0,
-  cajaInicial: 0,
-  recogida: 0,
-  prestamos: 0,
-  gastos: 0,
-  cajaFinal: 0,
-  clavosTotal: 0,
-  clientesClavo: 0
+    fecha: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
+    ingresos: 0,
+    cajaInicial: 0,
+    recogida: 0,
+    prestamos: 0,
+    gastos: 0,
+    cajaFinal: 0,
+    clavosTotal: 0,
+    clientesClavo: 0
 });
 
 // Función para formatear la fecha visualmente
 const formatoFecha = (fechaISO) => {
-  const opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
-  return new Date(fechaISO).toLocaleDateString('es-ES', opciones);
+    const opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
+    return new Date(fechaISO).toLocaleDateString('es-ES', opciones);
 };
 
 </script>
@@ -98,39 +98,43 @@ const formatoFecha = (fechaISO) => {
 }
 
 .cabecera-formulario {
-  position: relative;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid var(--color-info-luz);
+    position: relative;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--color-info-luz);
 }
 
 .enlace-calendario {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  text-decoration: none;
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    text-decoration: none;
 }
 
 .icono-calendario {
-  padding: 0.4rem;
-  background: var(--color-azul-1);
-  color: var(--color-blanco);
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+    margin-top: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icono-boton {
+    width: 2.5rem;
+    height: 2.5rem;
+    object-fit: contain;
 }
 
 /* Asegúrate de que la fecha quede centrada */
 .fecha-centrada {
-  font-size: 1.1rem;
-  font-weight: 500;
-  text-align: center;
-  width: 100%;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-align: center;
+    width: 100%;
 }
+
 .caja-diaria {
     padding: 1.5rem;
 }
@@ -145,6 +149,15 @@ const formatoFecha = (fechaISO) => {
     align-items: center;
     padding: 0.48rem;
     border-bottom: 1px solid var(--color-info-luz);
+}
+
+
+.sale {
+    color: var(--color-rojo-5);
+}
+
+.entra {
+    color: var(--color-azul-1);
 }
 
 .punto-formulario label {

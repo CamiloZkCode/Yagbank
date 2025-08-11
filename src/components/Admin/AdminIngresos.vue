@@ -3,7 +3,7 @@
         <div class="contenedor-botones">
             <button class="ingreso" @click="mostrarIngreso = true">
                 Registrar Ingreso
-                <span class="material-symbols-outlined">attach_money</span>
+                <img class="icono-boton" src="/src/assets/Icons/GastosBoton.png" alt="">
             </button>
         </div>
 
@@ -194,7 +194,7 @@ const ingresosFiltrados = computed(() =>
 }
 
 .contenedor-botones .ingreso {
-    background: var(--color-amarillo-2);
+    background: var(--color-aprobado-1);
 }
 
 button {
@@ -211,6 +211,8 @@ button {
     cursor: pointer;
     height: 2.2rem;
     line-height: 1;
+    box-shadow: 0 5px 6px rgba(0, 0, 0, 0.2);
+
 }
 
 
@@ -222,6 +224,12 @@ select {
     padding: 8px;
     border: 1px solid var(--color-info-luz);
     border-radius: 6px;
+}
+
+.icono-boton{
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
 }
 
 .modal-overlay {

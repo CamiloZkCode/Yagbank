@@ -3,12 +3,12 @@
         <div class="contenedor-botones">
             <button @click="mostrarCliente = true">
                 Crear Cliente
-                <span class="material-symbols-outlined">person_add</span>
+                <img class="icono-boton" src="/src/assets/icons/CrearUser.png" alt="">
             </button>
 
             <button class="credito" @click="mostrarCredito = true">
                 Crear Prestamo
-                <span class="material-symbols-outlined">currency_exchange</span>
+                <img class="icono-boton" src="/src/assets/icons/NuevoCredito.png" alt="">
             </button>
         </div>
 
@@ -329,8 +329,16 @@ button {
     cursor: pointer;
     height: 2.2rem;
     line-height: 1;
+    box-shadow: 0 5px 6px rgba(0, 0, 0, 0.2);
+
 }
 
+
+.icono-boton {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+}
 
 input,
 select {

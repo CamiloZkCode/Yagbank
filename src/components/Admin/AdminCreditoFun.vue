@@ -3,7 +3,8 @@
         <div class="contenedor-botones">
             <button class="prestamo" @click="mostrarPrestamo = true">
                 Prestamo Funcionario
-                <span class="material-symbols-outlined">currency_exchange</span>
+                <img class="icono-boton" src="/src/assets/Icons/NuevoCredito1.png" alt="">
+
             </button>
         </div>
 
@@ -76,8 +77,10 @@
                                 v-if="usuarioExpandido === prestamo.id_prestamo && idRol === 1 && prestamo.estado === 'pendiente'">
                                 <td colspan="7">
                                     <div class="estado-funcionario">
-                                        <button @click="aceptarPrestamo(prestamo.id_prestamo)" class="aceptar">Aceptar</button>
-                                        <button @click="denegarPrestamo(prestamo.id_prestamo)" class="denegar">Denegar</button>
+                                        <button @click="aceptarPrestamo(prestamo.id_prestamo)"
+                                            class="aceptar">Aceptar</button>
+                                        <button @click="denegarPrestamo(prestamo.id_prestamo)"
+                                            class="denegar">Denegar</button>
                                     </div>
                                 </td>
                             </tr>
@@ -250,8 +253,6 @@ const FuncionarioFiltro = computed(() =>
 
 
 <style scoped>
-
-
 .contenedor-botones {
     margin-top: 1.5rem;
     align-items: center;
@@ -262,7 +263,7 @@ const FuncionarioFiltro = computed(() =>
 }
 
 .contenedor-botones .prestamo {
-    background: var(--color-aprobado-1);
+    background: var(--color-naranja-3);
 }
 
 button {
@@ -279,7 +280,11 @@ button {
     cursor: pointer;
     height: 2.2rem;
     line-height: 1;
+    box-shadow: 0 5px 6px rgba(0, 0, 0, 0.2);
+
 }
+
+
 
 
 input,
@@ -290,6 +295,12 @@ select {
     padding: 8px;
     border: 1px solid var(--color-info-luz);
     border-radius: 6px;
+}
+
+.icono-boton {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
 }
 
 .modal-overlay {
@@ -467,17 +478,17 @@ table tbody tr:last-child td {
     font-size: 0.95rem;
 }
 
-.estado-funcionario{
+.estado-funcionario {
     display: flex;
     gap: 1rem;
     justify-content: center;
 }
 
-.estado-funcionario .aceptar{
+.estado-funcionario .aceptar {
     background-color: var(--color-aprobado-1);
 }
 
-.estado-funcionario .denegar{
+.estado-funcionario .denegar {
     background-color: var(--color-rojo-5);
 }
 
