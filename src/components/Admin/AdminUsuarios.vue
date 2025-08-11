@@ -3,7 +3,7 @@
         <div class="contenedor-botones">
             <button @click="mostrarUsuario = true">
                 Crear Usuario
-                <span class="material-symbols-outlined">assignment_ind</span>
+                <img class="icono-boton" src="/src/assets/Icons/CrearUser.png" alt="">
             </button>
         </div>
         <!-- Modal: Crear Usuario -->
@@ -113,18 +113,14 @@
                                 <td>{{ usuario.cargo }}</td>
                                 <td>{{ usuario.nombre_jefe }}</td>
                                 <td>
-                                    <span class="material-symbols-outlined icon-estado"
-                                        @click="toggleEstado(usuario.id)"
-                                        :class="{ 'icon-activo': usuario.estado, 'icon-inactivo': !usuario.estado }"
-                                        :title="usuario.estado ? 'Desactivar' : 'Activar'">
-                                        shield_toggle
-                                    </span>
+                                    <img class="icono-boton"
+                                        :src="usuario.estado ? '/src/assets/icons/BloqueoActivo.png' : '/src/assets/icons/Bloqueo.png'"
+                                        :alt="usuario.estado ? 'Activo' : 'Inactivo'" @click="toggleEstado(usuario.id)"
+                                        :title="usuario.estado ? 'Desactivar' : 'Activar'" />
                                 </td>
                                 <td>
-                                    <span class="material-symbols-outlined edit" @click="abrirModalEdicion(usuario)"
-                                        title="Editar usuario">
-                                        edit
-                                    </span>
+                                    <img class="icono-boton" src="/src/assets/icons/Edit.png" alt=""
+                                        @click="abrirModalEdicion(usuario)" title="Editar usuario">
                                 </td>
                                 <td>
                                     <span class="material-symbols-outlined ver-mas" @click="toggleExpand(usuario.id)">
@@ -138,7 +134,8 @@
                                 <td colspan="7" class="fila-expandida">
                                     <div class="info-extra">
                                         <strong>Correo:</strong> {{ usuario.correo }} &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Username:</strong> {{ usuario.username || 'N/A' }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Username:</strong> {{ usuario.username || 'N/A' }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Estado:</strong> {{ usuario.estado_texto || 'N/A' }}
                                     </div>
                                 </td>
@@ -426,6 +423,7 @@ button {
     cursor: pointer;
     height: 2.2rem;
     line-height: 1;
+    box-shadow: 0 5px 6px rgba(0, 0, 0, 0.2);
 }
 
 button:hover {
@@ -440,6 +438,14 @@ select {
     padding: 8px;
     border: 1px solid var(--color-info-luz);
     border-radius: 6px;
+}
+
+
+.icono-boton {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+    cursor: pointer;
 }
 
 .modal-overlay {
