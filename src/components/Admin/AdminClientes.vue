@@ -174,7 +174,7 @@
 import { ref, computed, watch,onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { crearClientes   } from '@/services/clientes'
-import { obtenerSupervisores   } from '@/services/usuario'
+import { obtenerSupervisores,obtenerAsesores  } from '@/services/usuario'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
 
@@ -190,15 +190,8 @@ const mostrarCredito = ref(false)
 
 //Estados Reactivos
 const supervisores = ref([]) // Cargar lista de supervisores
+const asesores= ref([]) // Cargar lista asesores
 
-
-
-
-// Rutas
-const rutas = ref([
-    { id: 1, nombre: 'Ruta 1' },
-    { id: 2, nombre: 'Ruta 2' }
-])
 //Cliente//
 //Crear Cliente//
 const guardarCliente = async() => {
@@ -212,9 +205,9 @@ const guardarCliente = async() => {
             function () {
                 // ✅ Esta función se ejecuta SÓLO cuando el usuario hace clic en 'OK'.
                 // Aquí cerramos el modal principal, limpiamos el formulario y recargamos los datos.
-                mostrarUsuario.value = false;
+                mostrarCliente.value = false;
                 limpiarFormulario();
-                cargarSupervisores
+                cargarSupervisores();
             }
         ).set({
             transition: 'fade',
@@ -238,8 +231,25 @@ const cliente = ref({
     telefono: '',
     ocupacion: '',
     referencia: '',
-    id_asesor: ''
+    id_supervisor:'',
+    id_asesor: '',
+    url_cedula: '',
+    url_negocio: '',
+    url_documentonegocio: ''
 })
+
+const archivos = ref({
+  cedula: null,
+  negocio: null,
+  documentonegocio: null
+})
+
+function onFileChange(event, tipo) {
+  const file = event.target.files[0]
+  if (file) {
+    archivos.value[tipo] = file
+  }
+}
 //Limpiar Formulario del cliente
 const limpiarFormulario = () => {
     cliente.value = {
@@ -262,6 +272,21 @@ const cargarSupervisores = async () => {
         console.error('Error al obtener supervisores:', error)
     }
 }
+
+
+watch(() => cliente.value.id_supervisor, async (nuevoId) => {
+  if (!nuevoId) {
+    asesores.value = [];
+    cliente.value.id_asesor = '';
+    return;
+  }
+  try {
+    asesores.value = await obtenerAsesores(nuevoId);
+  } catch (err) {
+    console.error('Error cargando asesores por supervisor:', err);
+    asesores.value = [];
+  }
+});
 
 const obtenerFechaActual = () => {
     const hoy = new Date()
