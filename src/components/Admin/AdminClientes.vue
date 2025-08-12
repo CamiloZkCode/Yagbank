@@ -15,7 +15,8 @@
         <!-- Modal Cliente -->
         <div v-if="mostrarCliente" class="modal-overlay">
             <div class="modal-content">
-                <span class="material-symbols-outlined close-icon" @click="mostrarCliente = false; limpiarFormulario()">close</span>
+                <span class="material-symbols-outlined close-icon"
+                    @click="mostrarCliente = false; limpiarFormulario()">close</span>
                 <h2>Registrar Cliente</h2>
                 <form @submit.prevent="guardarCliente" enctype="multipart/form-data">
                     <input v-model="cliente.documento_cliente" type="number" placeholder="Documento" required />
@@ -38,7 +39,8 @@
                     <label>Selecciona el asesor</label>
                     <select v-model="cliente.id_asesor">
                         <option disabled value="">Seleccione un asesor</option>
-                        <option v-for="asesor in asesores" :key="asesor.id" :value="asesor.id">{{ asesor.nombre }}</option>
+                        <option v-for="asesor in asesores" :key="asesor.id" :value="asesor.id">{{ asesor.nombre }}
+                        </option>
                     </select>
 
                     <label>Foto de la cédula:</label>
@@ -97,20 +99,56 @@
             </div>
         </div>
 
+
+        <!--Modal Edicion Cliente-->
+        <div v-if="mostrarEditarCliente" class="modal-overlay">
+            <div class="modal-content">
+                <span class="material-symbols-outlined close-icon"
+                    @click="mostrarEditarCliente = false; limpiarFormularioEdicion()">
+                    close
+                </span>
+
+                <h2>Editar Cliente</h2>
+
+                <form @submit.prevent="guardarEdicionCliente">
+                    <input v-model="clienteEditado.nombre" placeholder="Nombre" required />
+                    <input v-model="clienteEditado.apellido" placeholder="Apellido" required />
+                    <input v-model="clienteEditado.telefono" placeholder="Teléfono" />
+
+                    <input v-model="clienteEditado.direccion_casa" placeholder="Dirección casa" />
+                    <input v-model="clienteEditado.direccion_trabajo" placeholder="Dirección trabajo" />
+
+                    <input v-model="clienteEditado.ocupacion" placeholder="Ocupación" />
+                    <input v-model="clienteEditado.referencia" placeholder="Referencia" />
+
+                    <!-- Selección de supervisor -->
+                    <label>Selecciona el supervisor</label>
+                    <select v-model="clienteEditado.id_supervisor" required>
+                        <option disabled value="">Seleccione un supervisor</option>
+                        <option v-for="sup in supervisores" :key="sup.id" :value="sup.id">{{ sup.nombre }}</option>
+                    </select>
+
+                    <!-- Selección de asesor -->
+                    <label>Selecciona el asesor</label>
+                    <select v-model="clienteEditado.id_asesor" required>
+                        <option disabled value="">Seleccione un asesor</option>
+                        <option v-for="asesor in asesores" :key="asesor.id" :value="asesor.id">{{ asesor.nombre }}
+                        </option>
+                    </select>
+                    <button type="submit">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+
+
+
+
         <!-- Tabla -->
         <div class="contenedor-tabla">
-
-
             <div class="filtros">
                 <div class="filtro-nombre">
                     <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" />
                     <span class="material-symbols-outlined">search</span>
-                </div>
-
-                <div class="cambiar-ruta">
-                    <button class="editar-ruta">
-                        <img class="icono-botones" src="/src/assets/icons/edit.png" alt="">
-                    </button>
                 </div>
             </div>
 
@@ -134,12 +172,17 @@
                                 <td>{{ Clientes.nombre }}</td>
                                 <td>{{ Clientes.nombre }}</td>
                                 <td>
+                                    <img class="icono-boton" src="/src/assets/icons/Edit.png" alt=""
+                                        @click="abrirModalEdicion(Clientes)" title="Editar cliente">
+                                </td>
+                                <td>
                                     <span class="material-symbols-outlined ver-mas"
                                         @click="toggleExpand(Clientes.id_cliente)">
                                         {{ usuarioExpandido === Clientes.id_cliente ? 'keyboard_double_arrow_up' :
                                             'keyboard_double_arrow_down' }}
                                     </span>
                                 </td>
+
                             </tr>
                             <tr v-if="usuarioExpandido === Clientes.id_cliente">
                                 <td colspan="7" class="fila-expandida">
@@ -171,10 +214,10 @@
 
 
 <script setup>
-import { ref, computed, watch,onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { crearClientes   } from '@/services/clientes'
-import { obtenerSupervisores   } from '@/services/usuario'
+import { crearClientes } from '@/services/clientes'
+import { obtenerSupervisores } from '@/services/usuario'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
 
@@ -186,6 +229,8 @@ const usuarioLogueado = computed(() => authStore.user)
 // Modales
 const mostrarCliente = ref(false)
 const mostrarCredito = ref(false)
+const mostrarEditarCliente = ref(false)
+
 
 
 //Estados Reactivos
@@ -194,19 +239,15 @@ const supervisores = ref([]) // Cargar lista de supervisores
 
 
 
-// Rutas
-const rutas = ref([
-    { id: 1, nombre: 'Ruta 1' },
-    { id: 2, nombre: 'Ruta 2' }
-])
+
 //Cliente//
 //Crear Cliente//
-const guardarCliente = async() => {
-    try{
-        const guardar =await crearClientes(cliente.value)
+const guardarCliente = async () => {
+    try {
+        const guardar = await crearClientes(cliente.value)
         console.log('Cliente registrado:', cliente.value)
 
-         // ✅ La alerta de éxito ahora contiene la lógica para cerrar el modal
+        // ✅ La alerta de éxito ahora contiene la lógica para cerrar el modal
         alertify.alert(
             'Cliente registrado con éxito',
             function () {
@@ -223,9 +264,9 @@ const guardarCliente = async() => {
             pinnable: false,
             closable: true,
         });
-    }catch (error){
+    } catch (error) {
         console.error(error);
-    } 
+    }
 }
 
 // Cliente
@@ -414,6 +455,7 @@ button {
     width: 2rem;
     height: 2rem;
     object-fit: contain;
+    cursor: pointer;
 }
 
 input,
@@ -519,24 +561,12 @@ input[type="number"]::-webkit-inner-spin-button {
     cursor: pointer;
 }
 
-.cambiar-ruta {
-    margin-right: 2rem;
-}
-
-.editar-ruta {
-    background: var(--color-amarillo-2);
-    color: var(--color-blanco);
-}
-
-
 .icono-botones {
     width: 2rem;
     height: 2rem;
     object-fit: contain;
     filter: drop-shadow(1px 1px 5px var(--color-oscuro));
 }
-
-
 
 /*=====================Tabla============*/
 .tabla-scrollable {

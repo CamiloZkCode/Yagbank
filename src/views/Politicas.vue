@@ -184,7 +184,7 @@
                 <div class="bloque">
                     <h4>Datos Funcionario</h4>
                     <ul>
-                        <li>Todos los pagos deben registrarse en el sistema antes de finalizar el día laboral.</li>
+                        
                     </ul>
                 </div>
             </div>
