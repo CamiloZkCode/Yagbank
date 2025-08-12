@@ -4,25 +4,25 @@ async function crearCliente(cliente) {
   const {
     documento_cliente, nombre, apellido,
     direccion_casa, direccion_trabajo, telefono, ocupacion,
-    referencia, fecha_creacion, url_cedula, url_negocio,
-    url_documentonegocio, creado_por, estado,  id_asesor
+    referencia,url_cedula, url_negocio,
+    url_documentonegocio, creado_por, id_asesor,
   } = cliente;
 
   const query = `
     INSERT INTO clientes (
       documento_cliente, nombre, apellido,
 direccion_casa, direccion_trabajo, telefono, ocupacion,
-      referencia, fecha_creacion, url_cedula, url_negocio,
-      url_documentonegocio, creado_por, estado, id_asesor
+      referencia, url_cedula, url_negocio,
+      url_documentonegocio, creado_por, id_asesor
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   
   const values = [
     documento_cliente, nombre, apellido,
     direccion_casa, direccion_trabajo, telefono, ocupacion,
-    referencia, fecha_creacion, url_cedula, url_negocio,
-    url_documentonegocio, estado, creado_por, id_asesor
+    referencia, url_cedula, url_negocio,
+    url_documentonegocio, creado_por, id_asesor
   ];
 
   await db.query(query, values);

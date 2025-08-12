@@ -7,8 +7,7 @@ async function registrarClientes(req, res) {
 
      if (!nuevoCliente.documento_cliente || !nuevoCliente.nombre || !nuevoCliente.apellido || 
         !nuevoCliente.direccion_casa || !nuevoCliente.direccion_trabajo || !nuevoCliente.telefono || 
-        !nuevoCliente.ocupacion || !nuevoCliente.referencia || !nuevoCliente.url_cedula || 
-        !nuevoCliente.estado || !nuevoCliente.id_asesor) {
+        !nuevoCliente.ocupacion || !nuevoCliente.referencia || !nuevoCliente.id_asesor) {
       return res.status(400).json({ message: 'Faltan campos obligatorios' });
     }
     const [existing] = await db.query(
@@ -20,7 +19,6 @@ async function registrarClientes(req, res) {
     }
 
     nuevoCliente.creado_por = req.user.id_usuario;
-    nuevoCliente.fecha_creacion = new Date();
 
     await crearCliente(nuevoCliente);
     res.status(201).json({ message: 'Cliente creado exitosamente' });

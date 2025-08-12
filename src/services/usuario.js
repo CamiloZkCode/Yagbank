@@ -38,6 +38,15 @@ export async function obtenerSupervisores() {
     throw err.response?.data || err;
   }
 }
+//Funcion: Obtener asesores
+export async function obtenerAsesores(id_supervisor) {
+  try {
+    const res = await API.post("/usuarios/asesores",{ id_supervisor });
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+}
 
 //Función : Metodo para cambiar el estado del usuario activo/desactivo
 export async function cambiarEstado(id) {
