@@ -217,7 +217,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { crearClientes   } from '@/services/clientes'
-import { obtenerSupervisores   } from '@/services/usuario'
+import { obtenerSupervisores,obtenerAsesores   } from '@/services/usuario'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
 
