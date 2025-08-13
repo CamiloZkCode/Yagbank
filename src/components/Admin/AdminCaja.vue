@@ -31,6 +31,7 @@
                         <label class="sale">Gastos:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
                     </div>
+
                     <div class="punto-formulario">
                         <label class="sale">Clavos Total:</label>
                         <input type="number" v-model="valorDesdeBD" readonly>
@@ -127,6 +128,14 @@ const formatoFecha = (fechaISO) => {
     object-fit: contain;
 }
 
+.entra{
+    color: var(--color-azul-1);
+}
+
+.sale{
+    color: var(--color-rojo-5);
+}
+
 /* Asegúrate de que la fecha quede centrada */
 .fecha-centrada {
     font-size: 1.1rem;
@@ -149,15 +158,6 @@ const formatoFecha = (fechaISO) => {
     align-items: center;
     padding: 0.48rem;
     border-bottom: 1px solid var(--color-info-luz);
-}
-
-
-.sale {
-    color: var(--color-rojo-5);
-}
-
-.entra {
-    color: var(--color-azul-1);
 }
 
 .punto-formulario label {

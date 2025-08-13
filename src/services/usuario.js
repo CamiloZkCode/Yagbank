@@ -42,6 +42,7 @@ export async function obtenerSupervisores() {
 export async function obtenerAsesores(id_supervisor) {
   try {
     const res = await API.post("/usuarios/asesores",{ id_supervisor });
+    
     return res.data;
   } catch (err) {
     throw err.response?.data || err;
