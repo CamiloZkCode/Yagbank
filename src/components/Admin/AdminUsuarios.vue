@@ -76,7 +76,7 @@
         <div class="contenedor-tabla">
             <div class="filtros">
                 <div class="filtro-cedula">
-                    <input class="filtro-ced" type="text" placeholder="Buscar por cédula" v-model="filtroCedula" />
+                    <input class="filtro-ced" type="text" placeholder="Buscar por Nombre" v-model="filtroNombre" />
                     <span class="material-symbols-outlined">search</span>
                 </div>
 
@@ -168,7 +168,7 @@ const mostrarEditarUsuario = ref(false) // Control de visibilidad de modal
 const supervisores = ref([])  // Cargar Lista De supervisores
 const usuarioExpandido = ref(null) // Expandir 
 const usuarios = ref([])
-const filtroCedula = ref('')
+const filtroNombre = ref('')
 const filtroCargo = ref('')
 
 
@@ -197,22 +197,24 @@ const usuarioEditado = ref({
 
 //Computed
 const usuariosFiltrados = computed(() => {
-    if (!Array.isArray(usuarios.value)) return []
+    if (!Array.isArray(usuarios.value)) return [];
+
+    const filtroNombreLower = filtroNombre.value.trim().toLowerCase();
+    const filtroCargoLower = filtroCargo.value.trim().toLowerCase();
 
     return usuarios.value.filter(usuario => {
-        const usuarioValido = usuario && typeof usuario === 'object'
-        if (!usuarioValido) return false
+        if (!usuario || typeof usuario !== 'object') return false;
 
-        const coincideCedula = usuario.id?.toString()
-            .includes(filtroCedula.value.trim())
+        // Filtro por nombre (insensible a mayúsculas/minúsculas)
+        const coincideNombre = usuario.nombre?.toLowerCase().includes(filtroNombreLower);
 
-        const coincideCargo = filtroCargo.value === '' ||
-            (usuario.cargo || '').toLowerCase()
-                .includes(filtroCargo.value.toLowerCase())
+        // Filtro por cargo (insensible a mayúsculas/minúsculas)
+        const coincideCargo = filtroCargoLower === '' ||
+            (usuario.cargo?.toLowerCase() || '').includes(filtroCargoLower);
 
-        return coincideCedula && coincideCargo
-    })
-})
+        return coincideNombre && coincideCargo;
+    });
+});
 
 
 
