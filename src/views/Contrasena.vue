@@ -43,7 +43,45 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import alertify from 'alertifyjs'
+import { cambiarContrasena } from '@/services/usuario'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
 
+const authStore = useAuthStore()
+const router = useRouter()
+
+
+
+const nuevaContrasena = ref('')
+const confirmarContrasena = ref('')
+const showPassword = ref(false)
+const showPasswordConfirm = ref(false)
+
+
+
+async function handleChangePassword() {
+  if (nuevaContrasena.value !== confirmarContrasena.value) {
+    alertify.error('Las contraseñas no coinciden')
+    return
+  }
+
+  try {
+    await cambiarContrasena({
+      nuevaContrasena: nuevaContrasena.value,
+    })
+
+    alertify.success('Contraseña actualizada correctamente')
+    setTimeout(() => {
+      authStore.logout() // corregido
+      router.push('/')
+    }, 2000)
+  } catch (err) {
+    console.error(err)
+    alertify.error(err.message || 'Error al actualizar la contraseña')
+  }
+}
 </script>
 
 <style scoped>

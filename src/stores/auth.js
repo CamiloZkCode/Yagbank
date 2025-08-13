@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import API from '@/services/axios'
+import router from '@/router/index'
+import alertify from 'alertifyjs'
+import 'alertifyjs/build/css/alertify.css'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -22,6 +25,20 @@ export const useAuthStore = defineStore('auth', {
         this.token = token
         localStorage.setItem('token', token)
         localStorage.setItem('user', JSON.stringify(user))
+
+        if (user.debe_cambiar_contrasena) {
+          alertify.alert(
+            'Cambio de contraseña requerido',
+            'Por favor, cambia tu contraseña antes de continuar.',
+            () => {
+              router.push('/cambiar-contrasena');
+            }
+          );
+        } else {
+          
+            router.push('/inicio');
+          }
+        
 
         return true
       } catch (error) {

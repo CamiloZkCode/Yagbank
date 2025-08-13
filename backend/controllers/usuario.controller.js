@@ -1,5 +1,7 @@
 const usuariosModel = require("../models/user.models");
 const db = require("../config/db");
+const bcrypt = require('bcrypt');
+
 
 
 //Modificar el estado del usuario
@@ -195,6 +197,34 @@ const getAsesores = async (req, res) => {
     res.status(500).json({ mensaje: "Error del servidor al obtener asesores" });
   }
 };
+async function cambiarContrasena(req, res) {
+  try {
+    const { nuevaContrasena } = req.body;
+    const id_usuario = req.user.id_usuario; // lo sacamos del token
+
+    console.log("ID desde token:", id_usuario);
+
+    if (!nuevaContrasena || nuevaContrasena.length < 6) {
+      return res.status(400).json({ message: 'La contraseña debe tener mínimo 6 caracteres' });
+    }
+
+    const hashedPassword = await bcrypt.hash(nuevaContrasena, 10);
+
+    const [resultado] = await db.query(
+      "UPDATE usuarios SET contraseña_hash = ?, debe_cambiar_contrasena = 0 WHERE id_usuario = ?",
+      [hashedPassword, id_usuario]
+    );
+
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado o no se pudo actualizar' });
+    }
+
+    res.json({ message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al actualizar contraseña' });
+  }
+}
 
 
 
@@ -206,4 +236,5 @@ module.exports = {
   cambiarEstadoUsuario,
   EditarUsuario,
   getAsesores,
+  cambiarContrasena
 };

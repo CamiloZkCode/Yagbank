@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from '@/stores/auth';
 
 // Layout
 import LayoutGeneral from "@/layouts/LayoutGeneral.vue";
@@ -103,6 +104,25 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 });
+
+router.beforeEach((to, from, next) => {
+  const auth = useAuthStore();
+
+  // Rutas que requieren autenticación
+  if (to.meta.requiereAuth) {
+    if (!auth.isAuthenticated) {
+      return next('/');
+    }
+
+    // 🚨 Si debe cambiar contraseña y no está en la vista para cambiarla
+    if (auth.user?.debe_cambiar_contrasena && to.path !== '/cambiar-contrasena') {
+      return next('/cambiar-contrasena');
+    }
+  }
+
+  next();
+});
+
 
 
 

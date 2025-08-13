@@ -67,3 +67,13 @@ export async function EditarUsuario(id, datosActualizados) {
     throw err.response?.data || err;
   }
 }
+
+export async function cambiarContrasena(datos) {
+  try {
+    const res = await API.post('/auth/actualizarContrasena', datos);
+    return res.data;
+  } catch (error) {
+    console.error("Error al cambiar contraseña:", error);
+    throw error.response?.data || { message: "Error de conexión" };
+  }
+}

@@ -23,12 +23,12 @@ async function login(req, res) {
   const rol = await getRolById(user.id_rol);
 
   const token = jwt.sign(
-    { id_usuario: user.id_usuario, rol,id_rol: user.id_rol },
+    { id_usuario: user.id_usuario, rol,id_rol: user.id_rol,debe_cambiar_contrasena: user.debe_cambiar_contrasena },
     process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );
 
-  res.json({ token, user: { id: user.id_usuario, nombre: user.nombre, rol,id_rol: user.id_rol } });
+  res.json({ token, user: { id: user.id_usuario, nombre: user.nombre, rol,id_rol: user.id_rol,debe_cambiar_contrasena: user.debe_cambiar_contrasena } });
 }
 
 module.exports = { login };
