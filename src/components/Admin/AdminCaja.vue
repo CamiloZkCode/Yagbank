@@ -1,6 +1,6 @@
 <template>
     <div class="global">
-        <h1>Caja Nombre Funcionario</h1>
+        <h1>Caja {{ authStore.user.nombre }}</h1>
         <div class="contenedor-caja">
             <div class="cabecera-formulario">
                 <div class="fecha-centrada">{{ formatoFecha(formulario.fecha) }}</div>
@@ -13,40 +13,40 @@
                 <form action="">
                     <div class="punto-formulario">
                         <label class="entra">Ingresos:</label>
-                        <input type="number" v-model="valorDesdeBD" readonly>
+                        <input type="number" :value="formulario.ingresos" readonly>
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Caja Inicial:</label>
-                        <input type="number" v-model="valorDesdeBD" readonly>
+                        <input type="number" :value="formulario.cajaInicial" readonly>
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Recogida:</label>
-                        <input type="number" v-model="valorDesdeBD" readonly>
+                        <input type="number" :value="formulario.recogida" readonly>
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Prestamos:</label>
-                        <input type="number" v-model="valorDesdeBD" readonly>
+                        <input type="number" :value="formulario.prestamos" readonly>
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Gastos:</label>
-                        <input type="number" v-model="valorDesdeBD" readonly>
+                        <input type="number" :value="formulario.gastos" readonly>
                     </div>
 
                     <div class="punto-formulario">
                         <label class="sale">Clavos Total:</label>
-                        <input type="number" v-model="valorDesdeBD" readonly>
+                        <input type="number" :value="formulario.clavosTotal" readonly>
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Clientes Clavo:</label>
-                        <input type="number" v-model="valorDesdeBD" readonly>
+                        <input type="number" :value="formulario.clientesClavo" readonly>
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Caja:</label>
-                        <input type="number" v-model="valorDesdeBD" readonly>
+                        <input type="number" :value="formulario.cajaFinal" readonly>
                     </div>
 
                     <div class="contenedor-boton">
-                        <button>CONFIRMAR CUADRE</button>
+                        <button @click.prevent="confirmarCuadre">CONFIRMAR CUADRE</button>
                     </div>
                 </form>
             </div>
@@ -55,12 +55,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { obtenerCajaPorRol, cerrarCaja, GenerarCaja } from '@/services/caja.js';
+import { useAuthStore } from '@/stores/auth';
 
-const valorDesdeBD = ref(0); // Este valor vendría de tu base de datos
+const authStore = useAuthStore();
+
+// Función para obtener la fecha local en formato YYYY-MM-DD
+function obtenerFechaLocalISO() {
+    const tzOffset = new Date().getTimezoneOffset() * 60000; // milisegundos de diferencia con UTC
+    return new Date(Date.now() - tzOffset).toISOString().split('T')[0];
+}
 
 const formulario = ref({
-    fecha: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
+    fecha: obtenerFechaLocalISO(),
     ingresos: 0,
     cajaInicial: 0,
     recogida: 0,
@@ -71,7 +79,44 @@ const formulario = ref({
     clientesClavo: 0
 });
 
-// Función para formatear la fecha visualmente
+// Cargar datos de la caja
+onMounted(async () => {
+    try {
+        // Generar caja antes de obtenerla
+        await GenerarCaja({
+            id_usuario: authStore.user.id,
+            fecha: formulario.value.fecha
+        });
+
+        // Consultar la caja por rol
+        const data = await obtenerCajaPorRol({
+            params: {
+                id_usuario: authStore.user.id,
+                rol: authStore.user.rol,
+                fecha: formulario.value.fecha
+            }
+        });
+
+        // Si hay datos, llenar el formulario
+        if (data.length > 0) {
+            const caja = data[0];
+            formulario.value = {
+                fecha: caja.fecha,
+                ingresos: caja.total_ingresos,
+                cajaInicial: caja.caja_inicial,
+                recogida: caja.total_cobrado,
+                prestamos: caja.total_prestado,
+                gastos: caja.total_gastos,
+                cajaFinal: caja.caja_final,
+                clavosTotal: caja.clavos_dia,
+                clientesClavo: caja.clientes_clavos_totales
+            };
+        }
+    } catch (error) {
+        console.error("Error cargando caja:", error);
+    }
+});
+
 const formatoFecha = (fechaISO) => {
     const opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
     return new Date(fechaISO).toLocaleDateString('es-ES', opciones);
@@ -128,11 +173,11 @@ const formatoFecha = (fechaISO) => {
     object-fit: contain;
 }
 
-.entra{
+.entra {
     color: var(--color-azul-1);
 }
 
-.sale{
+.sale {
     color: var(--color-rojo-5);
 }
 

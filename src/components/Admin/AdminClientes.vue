@@ -65,7 +65,8 @@
                     @click="mostrarCredito = false; resetearFormularioCredito()">close</span>
                 <h2>Registrar Préstamo</h2>
                 <form @submit.prevent="guardarCredito">
-                    <input v-model="credito.cedula_cliente" type="number" placeholder="Cédula del Cliente" required />
+                    <input v-model="credito.documento_cliente" type="number" placeholder="Cédula del Cliente"
+                        required />
 
                     <label>Fecha de Solicitud:</label>
                     <input v-model="credito.fecha_solicitud" type="date" readonly />
@@ -82,17 +83,21 @@
                         min="1" />
 
                     <label>Cantidad de Cuotas (máx. 24):</label>
-                    <input v-model="credito.cuotas" type="number" :max="24" required min="1" />
+                    <input v-model="credito.numero_cuotas" type="number" :max="24" required min="1" />
 
                     <label>Valor por Cuota:</label>
-                    <input :value="formatearMoneda(credito.valor_cuota)" type="text" readonly />
+                    <input :value="formatearMoneda(credito.valor_diario)" type="text" readonly />
 
                     <label>Valor Total (+20%):</label>
-                    <input :value="formatearMoneda(credito.valor_total)" type="text" readonly />
+                    <input :value="formatearMoneda(credito.total)" type="text" readonly />
 
+                    <label>Forma de Pago:</label>
+                    <select v-model="credito.forma_pago" required>
+                        <option value="Diaria">Diaria</option>
+                    </select>
 
                     <label>Fecha de Finalización:</label>
-                    <input v-model="credito.fecha_fin" type="date" readonly />
+                    <input v-model="credito.fecha_finalizacion" type="date" readonly />
 
                     <button type="submit">Guardar Crédito</button>
                 </form>
@@ -217,8 +222,9 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { crearClientes   } from '@/services/clientes'
-import { obtenerSupervisores,obtenerAsesores   } from '@/services/usuario'
+import { crearClientes } from '@/services/clientes'
+import { crearPrestamos } from '@/services/prestamos'
+import { obtenerSupervisores, obtenerAsesores } from '@/services/usuario'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
 
@@ -236,11 +242,34 @@ const mostrarEditarCliente = ref(false)
 
 //Estados Reactivos
 const supervisores = ref([]) // Cargar lista de supervisores
-const asesores= ref([]) // Cargar lista asesores
+const asesores = ref([]) // Cargar lista asesores
 
 
-//Cliente//
-//Crear Cliente//
+
+// Cliente
+const cliente = ref({
+    documento_cliente: '',
+    nombre: '',
+    apellido: '',
+    direccion_casa: '',
+    direccion_trabajo: '',
+    telefono: '',
+    ocupacion: '',
+    referencia: '',
+    id_supervisor: '',
+    id_asesor: '',
+    url_cedula: '',
+    url_negocio: '',
+    url_documentonegocio: ''
+})
+
+const archivos = ref({
+    cedula: null,
+    negocio: null,
+    documentonegocio: null
+})
+
+// Función para guardar cliente
 const guardarCliente = async () => {
     try {
         const guardar = await crearClientes(cliente.value)
@@ -268,35 +297,6 @@ const guardarCliente = async () => {
     }
 }
 
-// Cliente
-const cliente = ref({
-    documento_cliente: '',
-    nombre: '',
-    apellido: '',
-    direccion_casa: '',
-    direccion_trabajo: '',
-    telefono: '',
-    ocupacion: '',
-    referencia: '',
-    id_supervisor:'',
-    id_asesor: '',
-    url_cedula: '',
-    url_negocio: '',
-    url_documentonegocio: ''
-})
-
-const archivos = ref({
-  cedula: null,
-  negocio: null,
-  documentonegocio: null
-})
-
-function onFileChange(event, tipo) {
-  const file = event.target.files[0]
-  if (file) {
-    archivos.value[tipo] = file
-  }
-}
 //Limpiar Formulario del cliente
 const limpiarFormulario = () => {
     cliente.value = {
@@ -320,19 +320,18 @@ const cargarSupervisores = async () => {
     }
 }
 
-
 watch(() => cliente.value.id_supervisor, async (nuevoId) => {
-  if (!nuevoId) {
-    asesores.value = [];
-    cliente.value.id_asesor = '';
-    return;
-  }
-  try {
-    asesores.value = await obtenerAsesores(nuevoId);
-  } catch (err) {
-    console.error('Error cargando asesores por supervisor:', err);
-    asesores.value = [];
-  }
+    if (!nuevoId) {
+        asesores.value = [];
+        cliente.value.id_asesor = '';
+        return;
+    }
+    try {
+        asesores.value = await obtenerAsesores(nuevoId);
+    } catch (err) {
+        console.error('Error cargando asesores por supervisor:', err);
+        asesores.value = [];
+    }
 });
 
 const obtenerFechaActual = () => {
@@ -343,59 +342,79 @@ const obtenerFechaActual = () => {
     return `${year}-${month}-${day}`
 }
 
-
-// Crédito
+// Creacion Prestamo
 const credito = ref({
-    cedula_cliente: '',
+    documento_cliente: '',
     valor_prestamo: null,
     fecha_solicitud: obtenerFechaActual(),
-    cuotas: null,
-    valor_cuota: null,
-    valor_total: null,
-    fecha_fin: '',
-    moneda: 'USD'
+    numero_cuotas: null,
+    valor_diario: null,
+    total: null,
+    fecha_finalizacion: '',
+    moneda: 'USD',
+    forma_pago: 'Diaria',
+    interes: 20
 })
+
 
 const resetearFormularioCredito = () => {
     credito.value = {
-        cedula_cliente: "",
-        valor_prestamo: "",
+        documento_cliente: '',
+        valor_prestamo: null,
         fecha_solicitud: obtenerFechaActual(),
-        cuotas: "",
-        valor_total: "",
-        valor_cuota: "",
-        fecha_finalizacion: "",
+        numero_cuotas: null,
+        valor_diario: null,
+        total: null,
+        fecha_finalizacion: '',
         moneda: 'USD',
+        forma_pago: 'Diaria',
+        interes: 20
     }
 }
 
-watch([() => credito.value.valor_prestamo, () => credito.value.cuotas], () => {
-    const prestamo = parseFloat(credito.value.valor_prestamo)
-    const cuotas = parseInt(credito.value.cuotas)
 
-    if (!isNaN(prestamo) && !isNaN(cuotas)) {
+//watch para calcular valores del credito 
+
+watch([() => credito.value.valor_prestamo, () => credito.value.numero_cuotas], () => {
+    const prestamo = parseFloat(credito.value.valor_prestamo)
+    const cuotas = parseInt(credito.value.numero_cuotas)
+
+    if (!isNaN(prestamo) && !isNaN(cuotas) && cuotas > 0 && Number.isInteger(cuotas)) {
         const totalConInteres = prestamo * 1.2
-        credito.value.valor_total = totalConInteres.toFixed(2)
-        credito.value.valor_cuota = (totalConInteres / cuotas).toFixed(2)
+        credito.value.total = totalConInteres.toFixed(2)
+        credito.value.valor_diario = (totalConInteres / cuotas).toFixed(2)
 
         const hoy = new Date()
         hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset())
         const fechaLocal = new Date(hoy)
-
+        fechaLocal.setDate(fechaLocal.getDate()) // Comienza un día después
         let dias = cuotas
         while (dias > 0) {
             fechaLocal.setDate(fechaLocal.getDate() + 1)
             const dia = fechaLocal.getDay()
             if (dia !== 0) dias-- // Ignora domingos
         }
-
-        credito.value.fecha_fin = fechaLocal.toISOString().substring(0, 10)
+        credito.value.fecha_finalizacion = fechaLocal.toISOString().substring(0, 10)
     } else {
-        credito.value.valor_total = ""
-        credito.value.valor_cuota = ""
-        credito.value.fecha_fin = ""
+        credito.value.total = ""
+        credito.value.valor_diario = ""
+        credito.value.fecha_finalizacion = ""
     }
 })
+
+watch(() => credito.value.numero_cuotas, (nuevoValor) => {
+    if (nuevoValor && (nuevoValor < 1 || !Number.isInteger(Number(nuevoValor)))) {
+        alertify.error('El número de cuotas debe ser un entero positivo')
+        credito.value.numero_cuotas = null
+    }
+})
+
+function onFileChange(event, tipo) {
+    const file = event.target.files[0]
+    if (file) {
+        archivos.value[tipo] = file
+    }
+}
 
 const localesPorMoneda = {
     USD: 'en-US',
@@ -414,11 +433,43 @@ const formatearMoneda = (valor) => {
     }).format(valor)
 }
 
+//Guardar Credito
+const guardarCredito = async () => {
+    try {
+        const datosPrestamo = {
+            documento_cliente: credito.value.documento_cliente,
+            valor_prestamo: Number(credito.value.valor_prestamo),
+            forma_pago: credito.value.forma_pago,
+            numero_cuotas: Number(credito.value.numero_cuotas),
+            creado_por: usuarioLogueado.value.id
+        }
 
-const guardarCredito = () => {
-    console.log('Crédito registrado:', credito.value)
-    resetearFormularioCredito();
-    mostrarCredito.value = false
+        console.log('Datos a enviar:', datosPrestamo)
+        await crearPrestamos(datosPrestamo)
+
+
+        alertify.alert(
+            'Préstamo registrado con éxito',
+            `
+    <strong>Cliente:</strong> ${datosPrestamo.documento_cliente}<br>
+    <strong>Valor:</strong> ${credito.value.valor_prestamo}<br>
+    <strong>Cuotas:</strong> ${datosPrestamo.numero_cuotas}<br>
+    <strong>Forma de pago:</strong> ${datosPrestamo.forma_pago}
+  `,
+            function () {
+                mostrarCredito.value = false
+                resetearFormularioCredito()
+                CreditoCliente.value.push({
+                    id_cliente: datosPrestamo.documento_cliente,
+                    nombre: 'Cliente ' + datosPrestamo.documento_cliente,
+                    numero_cuotas: datosPrestamo.numero_cuotas
+                })
+            }
+        ).set({ transition: 'fade', movable: false })
+    } catch (error) {
+        console.error('Error al crear préstamo:', error)
+        alertify.error('Error al crear el préstamo: ' + (error.response?.data?.message || error.message))
+    }
 }
 
 // Expansión de tabla

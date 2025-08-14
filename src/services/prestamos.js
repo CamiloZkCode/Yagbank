@@ -1,7 +1,6 @@
 import API from '@/services/axios'
 
 
-
 //Función : Crear prestamos , accede a ruta en el backend
 export async function crearPrestamos(prestamos) {
   try {
