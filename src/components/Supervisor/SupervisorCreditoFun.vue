@@ -1,33 +1,33 @@
 <template>
     <div>
+        <div class="contenedor-botones">
+            <button class="prestamo" @click="mostrarPrestamo = true">
+                Préstamo Funcionario
+                <img class="icono-boton" src="/src/assets/Icons/NuevoCredito1.png" alt="Nuevo Crédito">
+            </button>
+        </div>
+
+        <!-- Modal Prestamo Funcionario -->
+        <div v-if="mostrarPrestamo" class="modal-overlay">
+            <div class="modal-content">
+                <span class="material-symbols-outlined close-icon" @click="cerrarModal">close</span>
+                <h2>Registrar Préstamo</h2>
+                <form @submit.prevent="guardarPrestamo">
+                    <label>Fecha de Solicitud:</label>
+                    <input :value="fechaActual" type="date" readonly />
+                    <label>Valor del Préstamo:</label>
+                    <input v-model="prestamo.valor_prestamo" type="number" min="1" required
+                        placeholder="Ingrese el monto" />
+                    <button type="submit">Guardar Préstamo</button>
+                </form>
+            </div>
+        </div>
+
         <!-- Tabla -->
         <div class="contenedor-tabla">
-            <div class="contenedor-solicitudes">
-                <div class="tarjeta-solicitud" v-for="solicitud in pendientes" :key="solicitud.id_prestamo">
-                    <div class="icono">
-                        <img class="icono-boton" src="/src/assets/Icons/Usuario.png" alt="Usuario" />
-                    </div>
-                    <div class="derecha">
-                        <div class="info">
-                            <h4>{{ solicitud.nombre_funcionario }}</h4>
-                            <small class="text-muted">
-                                Solicita un adelanto de ${{solicitud.monto}}
-                            </small>
-                        </div>
-                    </div>
-                    <img class="icono-boton" src="/src/assets/Icons/aceptar.png" alt="Aceptar"
-                        @click="aprobarPrestamo(solicitud.id_prestamo)" />
-                    <img class="icono-boton" src="/src/assets/Icons/cerrar.png" alt="Denegar"
-                        @click="rechazarPrestamo(solicitud.id_prestamo)" />
-                </div>
-                <div v-if="pendientes.length === 0" class="sin-solicitudes">
-                    No hay solicitudes pendientes.
-                </div>
-            </div>
-
             <div class="filtros">
                 <div class="filtro-nombre">
-                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" v-model="filtroNombre" />
+                    <input class="filtro-nom" type="text" placeholder="Búsqueda por nombre" v-model="filtroNombre" />
                     <span class="material-symbols-outlined">search</span>
                 </div>
             </div>
@@ -38,29 +38,23 @@
                         <tr>
                             <th class="columna-min">Fecha</th>
                             <th>Funcionario</th>
-                            <th>Autorizo</th>
                             <th>Monto</th>
                             <th>Abono</th>
                             <th>Saldo</th>
-                            <th>Acciones</th>
+                            <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="prestamo in prestamosFiltrados" :key="prestamo.id_prestamo">
+                        <tr v-for="prestamo in FuncionarioFiltro" :key="prestamo.id_prestamo">
                             <td>{{ formatDate(prestamo.fecha) }}</td>
                             <td>{{ prestamo.nombre_funcionario }}</td>
-                            <td>{{ prestamo.autorizado_por || '-' }}</td>
                             <td>${{ prestamo.monto }}</td>
                             <td>${{ prestamo.abono }}</td>
                             <td>${{ prestamo.saldo }}</td>
-                            <td>
-                                <img v-if="prestamo.estado === 'Aprobado'" class="icono-boton"
-                                    src="/src/assets/Icons/Bloqueo.png" alt="Liquidar"
-                                    @click="liquidarPrestamo(prestamo.id_prestamo)" title="Liquidar préstamo">
-                            </td>
+                            <td>{{ prestamo.estado }}</td>
                         </tr>
-                        <tr v-if="prestamosFiltrados.length === 0">
-                            <td colspan="8">No hay préstamos registrados</td>
+                        <tr v-if="FuncionarioFiltro.length === 0">
+                            <td colspan="6">No hay préstamos aprobados disponibles.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -70,154 +64,196 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import {
-    obtenerSolicitudesPendientes,
-    obtenerPrestamosAceptados,
-    aceptarPrestamo as apiAceptarPrestamo,
-    rechazarPrestamo as apiRechazarPrestamo,
-    liquidarPrestamo as apiLiquidarPrestamo
-} from '@/services/funcionariocredito'
-import alertify from 'alertifyjs'
-import 'alertifyjs/build/css/alertify.css'
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { crearPrestamoFuncionario, obtenerPrestamosAceptados } from '@/services/funcionariocredito';
+import alertify from 'alertifyjs';
+import 'alertifyjs/build/css/alertify.css';
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
+const usuarioLogueado = computed(() => authStore.user);
 
-// Datos
-const pendientes = ref([])
-const prestamos = ref([])
-const filtroNombre = ref('')
+// Modales
+const mostrarPrestamo = ref(false);
 
+// Fecha actual para visualización
+const fechaActual = computed(() => new Date().toISOString().substring(0, 10));
+
+// Prestamo
+const prestamo = ref({
+    valor_prestamo: null,
+});
+
+// Lista de préstamos
+const PrestamosFuncionario = ref([]);
+const filtroNombre = ref('');
+
+const FuncionarioFiltro = computed(() =>
+    PrestamosFuncionario.value.filter((prestamo) =>
+        prestamo.nombre_funcionario.toLowerCase().includes(filtroNombre.value.toLowerCase())
+    )
+);
 
 const formatDate = (dateString) => {
     if (!dateString) return ''
     return new Date(dateString).toLocaleDateString('es-ES')
 }
 
-// Filtros
-const prestamosFiltrados = computed(() => {
-    return prestamos.value.filter(prestamo =>
-        prestamo.nombre_funcionario.toLowerCase().includes(filtroNombre.value.toLowerCase())
-    )
-})
-
-// Cargar datos
-const cargarDatos = async () => {
+// Cargar préstamos aprobados al montar el componente
+onMounted(async () => {
     try {
-        const [pendientesRes, aprobadosRes] = await Promise.all([
-            obtenerSolicitudesPendientes(),
-            obtenerPrestamosAceptados()
-        ])
-
-        pendientes.value = pendientesRes.data || []
-        prestamos.value = aprobadosRes.data || []
+        const response = await obtenerPrestamosAceptados();
+        PrestamosFuncionario.value = response.data || [];
     } catch (error) {
-        console.error('Error al cargar datos:', error)
-        alertify.error('Error al cargar los préstamos')
+        console.error('Error al cargar préstamos:', error);
+        PrestamosFuncionario.value = [];
     }
-}
+});
 
-// Acciones
-const aprobarPrestamo = async (id) => {
+// Guardar préstamo con alertify
+const guardarPrestamo = async () => {
     try {
-        await apiAceptarPrestamo(id);
-        alertify.success('Préstamo aprobado correctamente');
-        await cargarDatos();
+        await crearPrestamoFuncionario({
+            monto: prestamo.value.valor_prestamo,
+            creado_por: usuarioLogueado.value.id
+        });
+
+        alertify.alert(
+            'Préstamo solicitado con éxito',
+            `
+                <strong>Monto:</strong> ${prestamo.value.valor_prestamo}<br>
+                <strong>Fecha:</strong> ${fechaActual.value}
+            `,
+            async function () {
+                cerrarModal();
+                const response = await obtenerPrestamosAceptados();
+                PrestamosFuncionario.value = response.data || [];
+            }
+        ).set({
+            transition: 'fade',
+            movable: false,
+            resizable: false,
+            pinnable: false,
+            closable: true
+        });
+
     } catch (error) {
-        console.error('Error al aprobar:', error);
-        const message = error.response?.data?.message || error.message || 'Error desconocido';
-        alertify.error(`Error al aprobar el préstamo: ${message}`);
+        console.error('Error al crear préstamo:', error);
+        alertify.error('Error al crear préstamo: ' + (error.response?.data?.message || error.message));
     }
 };
 
-const rechazarPrestamo = async (id) => {
-    try {
-        await apiRechazarPrestamo(id)
-        alertify.success('Préstamo rechazado correctamente')
-        cargarDatos()
-    } catch (error) {
-        console.error('Error al rechazar:', error)
-        alertify.error('Error al rechazar el préstamo')
-    }
-}
-
-const liquidarPrestamo = async (id) => {
-    try {
-        await apiLiquidarPrestamo(id)
-        alertify.success('Préstamo liquidado correctamente')
-        cargarDatos()
-    } catch (error) {
-        console.error('Error al liquidar:', error)
-        alertify.error('Error al liquidar el préstamo')
-    }
-}
-
-// Inicializar
-onMounted(() => {
-    cargarDatos()
-})
+// Limpiar formulario y cerrar modal
+const cerrarModal = () => {
+    prestamo.value = { valor_prestamo: null };
+    mostrarPrestamo.value = false;
+};
 </script>
 
+
 <style scoped>
-.icono-boton {
-    width: 1.5rem;
-    height: 1.5rem;
-    object-fit: contain;
-    cursor: pointer;
-    transition: all 300ms ease-in;
-}
-
-.icono-boton:hover {
-    transform: scale(1rem);
-}
-
-.contenedor-solicitudes {
-    margin-top: 1rem;
-    padding: var(--card-padding);
-    border-radius: var(--border-radius-3);
-    box-shadow: var(--box-shadow);
-    background: var(--color-blanco);
-    max-height: 28vh;
-    overflow-x: auto;
-    white-space: nowrap;
-    scrollbar-width: none;
-}
-
-.contenedor-solicitudes::-webkit-scrollbar {
-    display: none;
-    /* Chrome, Safari */
-}
-
-
-.contenedor-solicitudes h2 {
-    margin-bottom: 0.8rem;
-}
-
-.contenedor-solicitudes .tarjeta-solicitud {
-    display: inline-flex;
-    /* Clave para que se comporten en scroll horizontal */
-    display: flex;
+.contenedor-botones {
+    margin-top: 1.5rem;
     align-items: center;
-    gap: 1rem;
-    transition: all 300ms ease;
-    border: 1px solid var(--color-light);
-    border-radius: 1rem;
-    margin-top: 0.5rem;
-    padding: 0.8rem;
-}
-
-.contenedor-solicitudes:hover {
-    box-shadow: none;
-}
-
-.contenedor-solicitudes .tarjeta-solicitud .derecha {
+    justify-content: center;
     display: flex;
-    justify-content: space-between;
-    align-items: start;
-    margin: 0;
-    width: 100%;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
+
+.contenedor-botones .prestamo {
+    background: var(--color-naranja-3);
+}
+
+button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 1.2rem;
+    font-size: 1rem;
+    background: var(--color-azul-1);
+    color: var(--color-blanco);
+    border: none;
+    border-radius: 0.4rem;
+    cursor: pointer;
+    height: 2.2rem;
+    line-height: 1;
+    box-shadow: 0 5px 6px rgba(0, 0, 0, 0.2);
+
+}
+
+
+input,
+select {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid var(--color-info-luz);
+    border-radius: 6px;
+}
+
+.icono-boton {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background: var(--color-background);
+    padding: 2rem;
+    border-radius: var(--card-border-radius);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-content::-webkit-scrollbar {
+    height: 0.5rem;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0.8rem;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.close-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 28px;
+    color: var(--color-rojo-5);
+}
+
+.close-icon:hover {
+    color: var(--color-rojo-5);
+}
+
+.contenedor-tabla {
+    margin-top: 1.0rem;
+}
+
 
 /*=========================Filtro Tabla==========================*/
 
@@ -235,7 +271,7 @@ onMounted(() => {
     padding: 0 0.6rem;
     border-radius: 0.4rem;
     border: 1px solid var(--color-info-luz);
-    width: 18rem;
+    width: 16rem;
 }
 
 .filtro-nombre .filtro-nom {
@@ -428,7 +464,7 @@ table tbody tr:last-child td {
     }
 
     .contenedor-tabla .tabla-clientes {
-        min-width: 200%;
+        min-width: 170%;
     }
 
     .contenedor-tabla table {
