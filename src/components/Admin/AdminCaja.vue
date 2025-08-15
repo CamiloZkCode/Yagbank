@@ -1,52 +1,60 @@
 <template>
     <div class="global">
-        <h1>Caja {{ authStore.user.nombre }}</h1>
+        <h1>Caja {{ userName }}</h1>
         <div class="contenedor-caja">
             <div class="cabecera-formulario">
-                <div class="fecha-centrada">{{ formatoFecha(formulario.fecha) }}</div>
+                <div class="fecha-centrada">{{ formattedDate }}</div>
                 <router-link to="/caja-mes" class="enlace-calendario">
                     <img class="icono-boton icono-calendario" src="/src/assets/icons/CajaMensual.png" alt="">
                 </router-link>
             </div>
 
-            <div class="caja-diaria ">
+            <div class="caja-diaria" :class="{ 'caja-cerrada': cajaCerrada }">
                 <form action="">
-                    <div class="punto-formulario">
+                    <div class=" punto-formulario">
                         <label class="entra">Ingresos:</label>
-                        <input type="number" :value="formulario.ingresos" readonly>
+                        <input type="number" :value="formulario.ingresos" readonly
+                            :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Caja Inicial:</label>
-                        <input type="number" :value="formulario.cajaInicial" readonly>
+                        <input type="number" :value="formulario.cajaInicial" readonly
+                            :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Recogida:</label>
-                        <input type="number" :value="formulario.recogida" readonly>
+                        <input type="number" :value="formulario.recogida" readonly
+                            :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Prestamos:</label>
-                        <input type="number" :value="formulario.prestamos" readonly>
+                        <input type="number" :value="formulario.prestamos" readonly
+                            :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Gastos:</label>
-                        <input type="number" :value="formulario.gastos" readonly>
+                        <input type="number" :value="formulario.gastos" readonly
+                            :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
 
                     <div class="punto-formulario">
                         <label class="sale">Clavos Total:</label>
-                        <input type="number" :value="formulario.clavosTotal" readonly>
+                        <input type="number" :value="formulario.clavosTotal" readonly
+                            :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Clientes Clavo:</label>
-                        <input type="number" :value="formulario.clientesClavo" readonly>
+                        <input type="number" :value="formulario.clientesClavo" readonly
+                            :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Caja:</label>
-                        <input type="number" :value="formulario.cajaFinal" readonly>
+                        <input type="number" :value="formulario.cajaFinal" readonly
+                            :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
 
                     <div class="contenedor-boton">
-                        <button @click.prevent="confirmarCuadre">CONFIRMAR CUADRE</button>
+                        <button @click.prevent="confirmarCuadre" :disabled="cajaCerrada">CONFIRMAR CUADRE</button>
                     </div>
                 </form>
             </div>
@@ -55,11 +63,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { obtenerCajaPorRol, cerrarCaja, GenerarCaja } from '@/services/caja.js';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
+
+const cajaCerrada = ref(false);
+const userName = computed(() => authStore.user?.nombre || 'Usuario no identificado');
+const formattedDate = computed(() => {
+    return formulario.value.fecha;
+});
+
+
 
 // Función para obtener la fecha local en formato YYYY-MM-DD
 function obtenerFechaLocalISO() {
@@ -82,13 +98,19 @@ const formulario = ref({
 // Cargar datos de la caja
 onMounted(async () => {
     try {
-        // Generar caja antes de obtenerla
+        // Verificar autenticación
+        if (!authStore.user) {
+            router.push('/login');
+            return;
+        }
+
+        // Generar caja
         await GenerarCaja({
             id_usuario: authStore.user.id,
             fecha: formulario.value.fecha
         });
 
-        // Consultar la caja por rol
+        // Consultar caja
         const data = await obtenerCajaPorRol({
             params: {
                 id_usuario: authStore.user.id,
@@ -97,7 +119,44 @@ onMounted(async () => {
             }
         });
 
-        // Si hay datos, llenar el formulario
+        if (data.length > 0) {
+            const caja = data[0];
+            formulario.value = {
+                fecha: caja.fecha || formulario.value.fecha,
+                ingresos: caja.total_ingresos,
+                cajaInicial: caja.caja_inicial,
+                recogida: caja.total_cobrado,
+                prestamos: caja.total_prestado,
+                gastos: caja.total_gastos,
+                cajaFinal: caja.caja_final,
+                clavosTotal: caja.clavos_dia,
+                clientesClavo: caja.clientes_clavos_totales
+            };
+            cajaCerrada.value = caja.Estado_caja === 0;
+
+        }
+    } catch (error) {
+        console.error("Error cargando caja:", error);
+    }
+});
+
+
+const confirmarCuadre = async () => {
+    try {
+        await cerrarCaja({
+            id_usuario: authStore.user.id,
+            fecha: formulario.value.fecha
+        });
+
+        // Actualizar los datos después del cierre
+        const data = await obtenerCajaPorRol({
+            params: {
+                id_usuario: authStore.user.id,
+                rol: authStore.user.rol,
+                fecha: formulario.value.fecha
+            }
+        });
+
         if (data.length > 0) {
             const caja = data[0];
             formulario.value = {
@@ -112,15 +171,15 @@ onMounted(async () => {
                 clientesClavo: caja.clientes_clavos_totales
             };
         }
+        cajaCerrada.value = true;
+        alert('Caja cerrada correctamente');
     } catch (error) {
-        console.error("Error cargando caja:", error);
+        console.error('Error al cerrar la caja:', error);
+        alert('Error al cerrar la caja');
     }
-});
-
-const formatoFecha = (fechaISO) => {
-    const opciones = { day: '2-digit', month: '2-digit', year: 'numeric' };
-    return new Date(fechaISO).toLocaleDateString('es-ES', opciones);
 };
+
+
 
 </script>
 
@@ -191,11 +250,13 @@ const formatoFecha = (fechaISO) => {
 
 .caja-diaria {
     padding: 1.5rem;
+
 }
 
 .caja-diaria form {
     width: 100%;
     max-width: 100%;
+
 }
 
 .punto-formulario {
@@ -222,6 +283,22 @@ const formatoFecha = (fechaISO) => {
     width: 200px;
     font-size: 1.1rem;
     text-align: right;
+}
+
+.caja-cerrada {
+    background-color: var(--color-aprobado-1);
+    opacity: 0.8;
+}
+
+.input-cerrado {
+    background-color: var(--color-aprobado-1);
+    color: var(--color-blanco);
+}
+
+button:disabled {
+    background-color: var(--color-gris-2);
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .punto-formulario input::-webkit-outer-spin-button,

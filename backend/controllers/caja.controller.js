@@ -1,13 +1,19 @@
-const { crearCaja, obtenerCajaPorUsuarioYFecha, actualizarCaja, obtenerCajasPorRol} = require("../models/caja.models.js"); 
+const {
+  crearCaja,
+  obtenerCajaPorUsuarioYFecha,
+  actualizarCaja,
+  obtenerCajasPorRol,
+} = require("../models/caja.models.js");
+
 const db = require("../config/db");
 
 const CajaController = {
   async generarCajaDiaria(req, res) {
     try {
       const { id_usuario, fecha } = req.body;
-      let caja = await obtenerCajaPorUsuarioYFecha(id_usuario, fecha);
 
-      // Crear si no existe
+      // Verificar si ya existe la caja para ese usuario y fecha
+      let caja = await obtenerCajaPorUsuarioYFecha(id_usuario, fecha);
       if (!caja) {
         const id_caja = await crearCaja(id_usuario, fecha);
         caja = { id_caja, caja_inicial: 0 };
@@ -22,8 +28,8 @@ const CajaController = {
         [id_caja]
       );
 
-      const [[{ total_prestado }]] = await db.execute(
-        `SELECT IFNULL(SUM(valor_prestamo),0) AS total_prestado 
+      const [[{ total_prestado_clientes }]] = await db.execute(
+        `SELECT IFNULL(SUM(valor_prestamo),0) AS total_prestado_clientes 
          FROM prestamos_clientes WHERE id_caja = ?`,
         [id_caja]
       );
@@ -40,18 +46,24 @@ const CajaController = {
         [id_caja]
       );
 
-      // Actualizar caja
-      const caja_final =
-        Number(caja.caja_inicial) +
-        total_cobrado +
-        total_ingresos -
-        total_gastos;
+      const [[{ total_prestamos_funcionarios }]] = await db.execute(
+        `SELECT IFNULL(SUM(monto),0) AS total_prestamos_funcionarios 
+         FROM prestamos_funcionarios 
+         WHERE id_caja = ? AND estado = 'Aprobado'`,
+        [id_caja]
+      );
 
+      // Calcular caja final
+      const caja_final =
+        Number(caja.caja_inicial) + Number(total_cobrado) + Number(total_ingresos) -
+        (Number(total_gastos) + Number(total_prestamos_funcionarios) + Number(total_prestado_clientes));
+
+      // Actualizar registro de caja
       await actualizarCaja(id_caja, {
         total_cobrado,
-        total_prestado,
+        total_prestado: Number(total_prestado_clientes) + Number(total_prestamos_funcionarios),
         total_ingresos,
-        total_gastos,
+        total_gastos: Number(total_gastos),
         caja_final,
       });
 
@@ -59,9 +71,10 @@ const CajaController = {
         message: "Caja diaria generada/actualizada",
         id_caja,
         total_cobrado,
-        total_prestado,
+        total_prestado: total_prestado_clientes + Number(total_prestamos_funcionarios),
         total_ingresos,
-        total_gastos,
+        total_gastos: Number(total_gastos),
+        total_prestamos_funcionarios,
         caja_final,
       });
     } catch (error) {
@@ -91,7 +104,6 @@ const CajaController = {
         return res.status(404).json({ message: "Caja no encontrada" });
       }
 
-      // Calcular caja final por si no está actualizada
       const caja_final =
         Number(caja.caja_inicial) +
         Number(caja.total_cobrado) +
