@@ -152,6 +152,24 @@ async function registrarPrestamos(req, res) {
       });
     }
 
+    
+    //Validar Estado del Prestamo
+    const [prestamoActivo] = await conn.query(
+    `SELECT id_prestamo 
+    FROM prestamos_clientes 
+    WHERE documento_cliente = ? AND estado = 'Activo'
+    LIMIT 1`,
+    [nuevoPrestamo.documento_cliente]
+    );
+
+    if (prestamoActivo[0]) {
+      await conn.rollback();
+      return res.status(400).json({
+        error: "PRESTAMO_ACTIVO",
+        message: "El cliente ya tiene un préstamo activo y no puede solicitar otro hasta liquidarlo o cancelarlo",
+      });
+    }
+
     // ==================== CREAR PRÉSTAMO ====================
     const datosPrestamo = {
       ...nuevoPrestamo,

@@ -27,21 +27,7 @@
                     <input v-model="cliente.telefono" placeholder="Teléfono" />
                     <input v-model="cliente.ocupacion" placeholder="Ocupación" />
                     <input v-model="cliente.referencia" placeholder="Referencia" />
-                    <!--Selecciona un asesor-->
-                    <label>Seleccionar un Asesor</label> <!--Cambiar esto¡¡¡¡¡¡-->
 
-                    <label>Selecciona el supervisor</label>
-                    <select v-model="cliente.id_supervisor">
-                        <option disabled value="">Seleccione un supervisor</option>
-                        <option v-for="sup in supervisores" :key="sup.id" :value="sup.id">{{ sup.nombre }}</option>
-                    </select>
-
-                    <label>Selecciona el asesor</label>
-                    <select v-model="cliente.id_asesor">
-                        <option disabled value="">Seleccione un asesor</option>
-                        <option v-for="asesor in asesores" :key="asesor.id" :value="asesor.id">{{ asesor.nombre }}
-                        </option>
-                    </select>
 
                     <label>Foto de la cédula:</label>
                     <input type="file" @change="onFileChange($event, 'cedula')" accept="image/*,application/pdf" />
@@ -224,7 +210,6 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { crearClientes } from '@/services/clientes'
 import { crearPrestamos } from '@/services/prestamos'
-import { obtenerSupervisores, obtenerAsesores } from '@/services/usuario'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
 
@@ -272,8 +257,10 @@ const archivos = ref({
 // Función para guardar cliente
 const guardarCliente = async () => {
     try {
+        //console.log("Datos enviados al backend:", cliente.value);
+        cliente.value.id_asesor = usuarioLogueado.value?.id;
         const guardar = await crearClientes(cliente.value)
-        console.log('Cliente registrado:', cliente.value)
+        //console.log('Cliente registrado:', cliente.value)
 
         // ✅ La alerta de éxito ahora contiene la lógica para cerrar el modal
         alertify.alert(
@@ -283,7 +270,6 @@ const guardarCliente = async () => {
                 // Aquí cerramos el modal principal, limpiamos el formulario y recargamos los datos.
                 mostrarCliente.value = false;
                 limpiarFormulario();
-                cargarSupervisores();
             }
         ).set({
             transition: 'fade',
@@ -312,27 +298,6 @@ const limpiarFormulario = () => {
     };
 };
 
-const cargarSupervisores = async () => {
-    try {
-        supervisores.value = await obtenerSupervisores()
-    } catch (error) {
-        console.error('Error al obtener supervisores:', error)
-    }
-}
-
-watch(() => cliente.value.id_supervisor, async (nuevoId) => {
-    if (!nuevoId) {
-        asesores.value = [];
-        cliente.value.id_asesor = '';
-        return;
-    }
-    try {
-        asesores.value = await obtenerAsesores(nuevoId);
-    } catch (err) {
-        console.error('Error cargando asesores por supervisor:', err);
-        asesores.value = [];
-    }
-});
 
 const obtenerFechaActual = () => {
     const hoy = new Date()
@@ -490,7 +455,6 @@ const CreditoCliente = ref([
 onMounted(async () => {
     console.log('Iniciando carga de datos...')
     try {
-        await cargarSupervisores()
         console.log('Datos cargados completamente')
     } catch (error) {
         console.error('Error en mounted:', error)
