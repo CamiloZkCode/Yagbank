@@ -1,29 +1,39 @@
-import API from '@/services/axios'
+import API from "@/services/axios";
+
+export async function obtenerCajaPorRol(params) {
+  try {
+    const res = await API.get("/caja/obtener", { params });
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+}
+
+export async function cerrarCaja() {
+  try {
+    const res = await API.post("/caja/cerrar");
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || err;
+  }
+}
 
 export async function GenerarCaja(data) {
   try {
-    const res = await API.post('/cajas/generar', data)
-    return res.data
+    const res = await API.post("/caja/generar", data);
+    return res.data;
   } catch (err) {
-    throw err.response?.data || err
-  } 
+    throw err.response?.data || err;
+  }
 }
 
-export async function obtenerCajaPorRol(caja) {
+export const verificarCajasDependientes = async (fecha) => {
   try {
-    const res = await API.get('/cajas/por-rol', caja)
-    return res.data
+    const response = await API.get("/caja/verificar", {
+      params: { fecha }, // Solo pasamos fecha, usuario y rol vienen del token
+    });
+    return response.data;
   } catch (err) {
-    throw err.response?.data || err
-  } 
-}
-
-export async function cerrarCaja(caja) {
-  try {
-    const res = await API.post('/cajas/cerrar-caja', caja)
-    return res.data
-  } catch (err) {
-    throw err.response?.data || err
-  } 
-}
-
+    throw err.response?.data || err;
+  }
+};

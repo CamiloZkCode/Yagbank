@@ -13,43 +13,43 @@
                 <form action="">
                     <div class=" punto-formulario">
                         <label class="entra">Ingresos:</label>
-                        <input type="number" :value="formulario.ingresos" readonly
+                        <input type="number" :value="formulario.total_ingresos" readonly
                             :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Caja Inicial:</label>
-                        <input type="number" :value="formulario.cajaInicial" readonly
+                        <input type="number" :value="formulario.caja_inicial" readonly
                             :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Recogida:</label>
-                        <input type="number" :value="formulario.recogida" readonly
+                        <input type="number" :value="formulario.total_cobrado" readonly
                             :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Prestamos:</label>
-                        <input type="number" :value="formulario.prestamos" readonly
+                        <input type="number" :value="formulario.total_prestado" readonly
                             :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Gastos:</label>
-                        <input type="number" :value="formulario.gastos" readonly
+                        <input type="number" :value="formulario.total_gastos" readonly
                             :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
 
                     <div class="punto-formulario">
                         <label class="sale">Clavos Total:</label>
-                        <input type="number" :value="formulario.clavosTotal" readonly
+                        <input type="number" :value="formulario.clavos_dia" readonly
                             :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="sale">Clientes Clavo:</label>
-                        <input type="number" :value="formulario.clientesClavo" readonly
+                        <input type="number" :value="formulario.clientes_clavos_totales" readonly
                             :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
                     <div class="punto-formulario">
                         <label class="entra">Caja:</label>
-                        <input type="number" :value="formulario.cajaFinal" readonly
+                        <input type="number" :value="formulario.caja_final" readonly
                             :class="{ 'input-cerrado': cajaCerrada }">
                     </div>
 
@@ -63,124 +63,154 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { obtenerCajaPorRol, cerrarCaja, GenerarCaja } from '@/services/caja.js';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { obtenerCajaPorRol, cerrarCaja, GenerarCaja, verificarCajasDependientes } from '@/services/caja.js';
 import { useAuthStore } from '@/stores/auth';
 
 const authStore = useAuthStore();
-
 const cajaCerrada = ref(false);
 const userName = computed(() => authStore.user?.nombre || 'Usuario no identificado');
-const formattedDate = computed(() => {
-    return formulario.value.fecha;
-});
-
-
-
-// Función para obtener la fecha local en formato YYYY-MM-DD
-function obtenerFechaLocalISO() {
-    const tzOffset = new Date().getTimezoneOffset() * 60000; // milisegundos de diferencia con UTC
-    return new Date(Date.now() - tzOffset).toISOString().split('T')[0];
-}
+const formattedDate = computed(() => formulario.value.fecha);
 
 const formulario = ref({
-    fecha: obtenerFechaLocalISO(),
-    ingresos: 0,
-    cajaInicial: 0,
-    recogida: 0,
-    prestamos: 0,
-    gastos: 0,
-    cajaFinal: 0,
-    clavosTotal: 0,
-    clientesClavo: 0
+    fecha: new Date().toISOString().split('T')[0],
+    caja_inicial: 0,
+    caja_final: 0,
+    total_cobrado: 0,
+    total_prestado: 0,
+    total_ingresos: 0,
+    total_gastos: 0,
+    clavos_dia: 0,
+    clientes_clavos_totales: 0,
+    Estado_caja: 1
 });
 
 // Cargar datos de la caja
-onMounted(async () => {
+const cargarCaja = async () => {
     try {
-        // Verificar autenticación
-        if (!authStore.user) {
-            router.push('/login');
-            return;
-        }
+        if (!authStore.user) return;
 
-        // Generar caja
-        await GenerarCaja({
+        // Obtener datos del backend
+        const data = await obtenerCajaPorRol({
             id_usuario: authStore.user.id,
+            rol: authStore.user.rol,
             fecha: formulario.value.fecha
         });
 
-        // Consultar caja
-        const data = await obtenerCajaPorRol({
-            params: {
+        // Generar/actualizar solo si caja está abierta
+        if (data.Estado_caja === 1) {
+            await GenerarCaja({
+                id_usuario: authStore.user.id,
+                fecha: formulario.value.fecha
+            });
+            // Recargar datos actualizados después de generar
+            const updatedData = await obtenerCajaPorRol({
                 id_usuario: authStore.user.id,
                 rol: authStore.user.rol,
                 fecha: formulario.value.fecha
-            }
-        });
-
-        if (data.length > 0) {
-            const caja = data[0];
-            formulario.value = {
-                fecha: caja.fecha || formulario.value.fecha,
-                ingresos: caja.total_ingresos,
-                cajaInicial: caja.caja_inicial,
-                recogida: caja.total_cobrado,
-                prestamos: caja.total_prestado,
-                gastos: caja.total_gastos,
-                cajaFinal: caja.caja_final,
-                clavosTotal: caja.clavos_dia,
-                clientesClavo: caja.clientes_clavos_totales
-            };
-            cajaCerrada.value = caja.Estado_caja === 0;
-
+            });
+            // Asignar datos actualizados al formulario
+            Object.assign(formulario.value, {
+                fecha: updatedData.fecha || formulario.value.fecha,
+                caja_inicial: Number(updatedData.caja_inicial) || 0,
+                caja_final: Number(updatedData.caja_final) || 0,
+                total_cobrado: Number(updatedData.total_cobrado) || 0,
+                total_prestado: Number(updatedData.total_prestado) || 0,
+                total_ingresos: Number(updatedData.total_ingresos) || 0,
+                total_gastos: Number(updatedData.total_gastos) || 0,
+                clavos_dia: Number(updatedData.clavos_dia) || 0,
+                clientes_clavos_totales: Number(updatedData.clientes_clavos_totales) || 0,
+                Estado_caja: updatedData.Estado_caja || 1
+            });
+            cajaCerrada.value = updatedData.Estado_caja === 0;
+        } else {
+            // Si caja cerrada, asignar datos directamente
+            Object.assign(formulario.value, {
+                fecha: data.fecha || formulario.value.fecha,
+                caja_inicial: Number(data.caja_inicial) || 0,
+                caja_final: Number(data.caja_final) || 0,
+                total_cobrado: Number(data.total_cobrado) || 0,
+                total_prestado: Number(data.total_prestado) || 0,
+                total_ingresos: Number(data.total_ingresos) || 0,
+                total_gastos: Number(data.total_gastos) || 0,
+                clavos_dia: Number(data.clavos_dia) || 0,
+                clientes_clavos_totales: Number(data.clientes_clavos_totales) || 0,
+                Estado_caja: data.Estado_caja || 1
+            });
+            cajaCerrada.value = data.Estado_caja === 0;
         }
     } catch (error) {
         console.error("Error cargando caja:", error);
     }
-});
+};
+
+// Polling para actualizaciones
+let pollingInterval;
 
 
-const confirmarCuadre = async () => {
-    try {
-        await cerrarCaja({
-            id_usuario: authStore.user.id,
-            fecha: formulario.value.fecha
-        });
-
-        // Actualizar los datos después del cierre
-        const data = await obtenerCajaPorRol({
-            params: {
-                id_usuario: authStore.user.id,
-                rol: authStore.user.rol,
-                fecha: formulario.value.fecha
-            }
-        });
-
-        if (data.length > 0) {
-            const caja = data[0];
-            formulario.value = {
-                fecha: caja.fecha,
-                ingresos: caja.total_ingresos,
-                cajaInicial: caja.caja_inicial,
-                recogida: caja.total_cobrado,
-                prestamos: caja.total_prestado,
-                gastos: caja.total_gastos,
-                cajaFinal: caja.caja_final,
-                clavosTotal: caja.clavos_dia,
-                clientesClavo: caja.clientes_clavos_totales
-            };
-        }
-        cajaCerrada.value = true;
-        alert('Caja cerrada correctamente');
-    } catch (error) {
-        console.error('Error al cerrar la caja:', error);
-        alert('Error al cerrar la caja');
+let notificationTimer;
+const checkAutoCloseTime = () => {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    if (hours === 23 && minutes >= 50 && !cajaCerrada.value) {
+        alert('La caja se cerrará automáticamente pronto. Por favor, confirma el cuadre.');
+        // Opcional: Llama a confirmarCuadre() auto después de 10 min, pero mejor manual.
     }
 };
 
 
+onUnmounted(() => {
+    clearInterval(pollingInterval);
+    clearInterval(notificationTimer);
+});
 
+onMounted(async () => {
+    await cargarCaja();
+    pollingInterval = setInterval(cargarCaja, 30000);
+    notificationTimer = setInterval(checkAutoCloseTime, 60000); // Chequea cada minuto
+});
+
+const confirmarCuadre = async () => {
+    try {
+        if (!authStore.user) return;
+
+        await cargarCaja();
+
+        if (['Supervisor', 'Administrador'].includes(authStore.user.rol)) {
+            const response = await verificarCajasDependientes(formulario.value.fecha); // Sin objeto, solo fecha
+            if (response.count > 0) {
+                const nombres = response.cajasAbiertas.map(c => c.nombre).join(', ');
+                return alert(`No se puede cerrar la caja. Las siguientes cajas están abiertas: ${nombres}`);
+            }
+        }
+
+        const response = await cerrarCaja();
+
+        if (response.message === "Caja cerrada con éxito") {
+            // Actualizar estado localmente
+            formulario.value.Estado_caja = 0;
+            cajaCerrada.value = true;
+            // Asignar los valores devueltos por cerrarCaja para evitar duplicación
+            Object.assign(formulario.value, {
+                fecha: response.fecha || formulario.value.fecha,
+                caja_inicial: Number(response.caja_inicial) || 0,
+                caja_final: Number(response.caja_final) || 0,
+                total_cobrado: Number(response.total_cobrado) || 0,
+                total_prestado: Number(response.total_prestado) || 0,
+                total_ingresos: Number(response.total_ingresos) || 0,
+                total_gastos: Number(response.total_gastos) || 0,
+                clavos_dia: Number(response.clavos_dia) || 0,
+                clientes_clavos_totales: Number(response.clientes_clavos_totales) || 0,
+                Estado_caja: 0
+            });
+            alert('Caja cerrada correctamente');
+        }
+    } catch (error) {
+        console.error('Error al cerrar la caja:', error);
+        alert(error?.error || error?.message || 'Error al cerrar la caja');
+    }
+};
 </script>
 
 <style scoped>

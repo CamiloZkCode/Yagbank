@@ -3,122 +3,235 @@ const {
   obtenerCajaPorUsuarioYFecha,
   actualizarCaja,
   obtenerCajasPorRol,
+  verificarCajasDependientes,
+  obtenerCajaAnterior,
 } = require("../models/caja.models.js");
-
 const db = require("../config/db");
 
 const CajaController = {
-  async generarCajaDiaria(req, res) {
+  async generarCajaDiaria(req, res, next) {
     try {
       const { id_usuario, fecha } = req.body;
+      const rol = req.user?.rol;
 
-      // Verificar si ya existe la caja para ese usuario y fecha
+      if (!id_usuario || !fecha) {
+        return res.status(400).json({ error: "Faltan campos requeridos" });
+      }
+
       let caja = await obtenerCajaPorUsuarioYFecha(id_usuario, fecha);
+      let caja_inicial = 0;
+
       if (!caja) {
-        const id_caja = await crearCaja(id_usuario, fecha);
-        caja = { id_caja, caja_inicial: 0 };
+        // Chequear caja anterior para inicial
+        caja_inicial = await obtenerCajaAnterior(id_usuario, fecha);
+        const id_caja = await crearCaja(id_usuario, fecha, caja_inicial);
+        caja = { id_caja, caja_inicial, Estado_caja: 1 };
+      } else {
+        caja_inicial = caja.caja_inicial;
+      }
+
+      if (caja.Estado_caja === 0) {
+        return res
+          .status(400)
+          .json({ error: "La caja ya está cerrada, no se puede actualizar" });
       }
 
       const id_caja = caja.id_caja;
 
+      // Función auxiliar mejorada
+      const calcularTotal = async (query, params, defaultValue = 0) => {
+        try {
+          const [[result]] = await db.execute(query, params);
+          return result
+            ? Number(Object.values(result)[0]) || defaultValue
+            : defaultValue;
+        } catch (error) {
+          console.warn(
+            `Error calculando total (${query.split(" ")[2]}):`,
+            error.message
+          );
+          return defaultValue;
+        }
+      };
+
       // Calcular totales
-      const [[{ total_cobrado }]] = await db.execute(
-        `SELECT IFNULL(SUM(monto),0) AS total_cobrado 
-         FROM cuotas WHERE id_caja = ? AND pagada = 1`,
-        [id_caja]
-      );
+      const [
+        total_cobrado,
+        total_prestado_clientes,
+        total_prestamos_funcionarios,
+        total_ingresos,
+        total_gastos,
+        clavos_dia,
+        clientes_clavos_totales,
+      ] = await Promise.all([
+        calcularTotal(
+          `SELECT IFNULL(SUM(monto),0) AS total FROM cuotas WHERE id_caja = ? AND pagada = 1`,
+          [id_caja]
+        ),
+        calcularTotal(
+          `SELECT IFNULL(SUM(valor_prestamo),0) AS total FROM prestamos_clientes WHERE id_caja = ?`,
+          [id_caja]
+        ),
+        calcularTotal(
+          `SELECT IFNULL(SUM(monto),0) AS total FROM prestamos_funcionarios WHERE id_caja = ? AND estado = 'Aprobado'`,
+          [id_caja]
+        ),
+        calcularTotal(
+          `SELECT IFNULL(SUM(valor),0) AS total FROM ingresos WHERE id_caja = ?`,
+          [id_caja]
+        ),
+        calcularTotal(
+          `SELECT IFNULL(SUM(valor),0) AS total FROM gastos WHERE id_caja = ?`,
+          [id_caja]
+        ),
+        calcularTotal(
+          `SELECT COUNT(*) AS total FROM clientes_clavo WHERE documento_cliente IN 
+           (SELECT documento_cliente FROM prestamos_clientes WHERE id_caja = ?)`,
+          [id_caja]
+        ),
+        calcularTotal(`SELECT COUNT(*) AS total FROM clientes_clavo`, []),
+      ]);
 
-      const [[{ total_prestado_clientes }]] = await db.execute(
-        `SELECT IFNULL(SUM(valor_prestamo),0) AS total_prestado_clientes 
-         FROM prestamos_clientes WHERE id_caja = ?`,
-        [id_caja]
-      );
-
-      const [[{ total_ingresos }]] = await db.execute(
-        `SELECT IFNULL(SUM(valor),0) AS total_ingresos 
-         FROM ingresos WHERE id_caja = ?`,
-        [id_caja]
-      );
-
-      const [[{ total_gastos }]] = await db.execute(
-        `SELECT IFNULL(SUM(valor),0) AS total_gastos 
-         FROM gastos WHERE id_caja = ?`,
-        [id_caja]
-      );
-
-      const [[{ total_prestamos_funcionarios }]] = await db.execute(
-        `SELECT IFNULL(SUM(monto),0) AS total_prestamos_funcionarios 
-         FROM prestamos_funcionarios 
-         WHERE id_caja = ? AND estado = 'Aprobado'`,
-        [id_caja]
-      );
-
-      // Calcular caja final
+      const total_prestado =
+        Number(total_prestado_clientes) + Number(total_prestamos_funcionarios);
       const caja_final =
-        Number(caja.caja_inicial) + Number(total_cobrado) + Number(total_ingresos) -
-        (Number(total_gastos) + Number(total_prestamos_funcionarios) + Number(total_prestado_clientes));
+        Number(caja.caja_inicial) +
+        Number(total_cobrado) +
+        Number(total_ingresos) -
+        (Number(total_gastos) + Number(total_prestado));
 
-      // Actualizar registro de caja
       await actualizarCaja(id_caja, {
         total_cobrado,
-        total_prestado: Number(total_prestado_clientes) + Number(total_prestamos_funcionarios),
+        total_prestado,
         total_ingresos,
-        total_gastos: Number(total_gastos),
+        total_gastos,
+        clavos_dia,
+        clientes_clavos_totales,
         caja_final,
+        Estado_caja: caja.Estado_caja,
+      });
+
+      const responseData = {
+        message: "Caja diaria generada/actualizada",
+        id_caja,
+        id_usuario,
+        rol,
+        total_cobrado,
+        total_prestado,
+        total_ingresos,
+        total_gastos,
+        clavos_dia,
+        clientes_clavos_totales,
+        caja_final,
+        Estado_caja: caja.Estado_caja,
+      };
+
+      res.json(responseData);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async obtenerCajaPorRol(req, res, next) {
+    try {
+      const { id_usuario, rol, fecha } = req.query;
+
+      if (!id_usuario || !rol || !fecha) {
+        return res.status(400).json({ error: "Faltan parámetros requeridos" });
+      }
+
+      const caja = await obtenerCajasPorRol(id_usuario, rol, fecha);
+      res.json(caja);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async cerrarCaja(req, res, next) {
+    try {
+      const { id_usuario, rol } = req.user;
+      const fechaHoy = new Date().toISOString().split("T")[0]; // Ahora con TZ fijado
+
+      const cajasAbiertas = await verificarCajasDependientes(
+        id_usuario,
+        rol,
+        fechaHoy
+      );
+
+      if (cajasAbiertas.length > 0) {
+        return res.status(400).json({
+          error: "No se puede cerrar la caja. Hay cajas dependientes abiertas",
+          cajasAbiertas: cajasAbiertas.map((c) => ({
+            id_usuario: c.id_usuario,
+            nombre: c.nombre,
+            estado: c.Estado_caja,
+          })),
+        });
+      }
+      // 3. Obtener datos consolidados
+      const cajaConsolidada = await obtenerCajasPorRol(
+        id_usuario,
+        rol,
+        fechaHoy
+      );
+
+      let cajaUsuario = await obtenerCajaPorUsuarioYFecha(id_usuario, fechaHoy);
+      if (!cajaUsuario) {
+        const id_caja_nueva = await crearCaja(id_usuario, fechaHoy);
+        cajaUsuario = { id_caja: id_caja_nueva, Estado_caja: 1 };
+      }
+
+      if (cajaUsuario.Estado_caja === 0) {
+        return res.status(400).json({ error: "La caja ya está cerrada" });
+      }
+
+      // Actualizar con consolidados y cerrar
+      await actualizarCaja(cajaUsuario.id_caja, {
+        total_cobrado: Number(cajaConsolidada.total_cobrado) || 0,
+        total_prestado: Number(cajaConsolidada.total_prestado) || 0,
+        total_ingresos: Number(cajaConsolidada.total_ingresos) || 0,
+        total_gastos: Number(cajaConsolidada.total_gastos) || 0,
+        clavos_dia: Number(cajaConsolidada.clavos_dia) || 0,
+        clientes_clavos_totales: Number(cajaConsolidada.clientes_clavos_totales) || 0,
+        caja_final: Number(cajaConsolidada.caja_final) || 0,
+        Estado_caja: 0,
       });
 
       res.json({
-        message: "Caja diaria generada/actualizada",
-        id_caja,
-        total_cobrado,
-        total_prestado: total_prestado_clientes + Number(total_prestamos_funcionarios),
-        total_ingresos,
-        total_gastos: Number(total_gastos),
-        total_prestamos_funcionarios,
-        caja_final,
+        message: "Caja cerrada con éxito",
+        ...cajaConsolidada,
+        Estado_caja: 0,
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Error generando caja diaria" });
+      console.error("Error en cerrarCaja:", error);
+      next(error);
     }
   },
 
-  async obtenerCajaPorRol(req, res) {
+  async verificarCajasDependientes(req, res, next) {
     try {
-      const { id_usuario, rol, fecha } = req.query;
-      const cajas = await obtenerCajasPorRol(id_usuario, rol, fecha);
-      res.json(cajas);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Error obteniendo cajas" });
-    }
-  },
+      const { id_usuario, rol } = req.user; // Obtenemos del token, no de query
+      const { fecha } = req.query;
 
-  async cerrarCaja(req, res) {
-    try {
-      const { id_usuario } = req.user; // desde JWT
-      const fechaHoy = new Date().toISOString().split("T")[0];
-
-      const caja = await obtenerCajaPorUsuarioYFecha(id_usuario, fechaHoy);
-      if (!caja) {
-        return res.status(404).json({ message: "Caja no encontrada" });
+      if (!fecha) {
+        return res
+          .status(400)
+          .json({ error: "El parámetro fecha es requerido" });
       }
 
-      const caja_final =
-        Number(caja.caja_inicial) +
-        Number(caja.total_cobrado) +
-        Number(caja.total_ingresos) -
-        Number(caja.total_gastos);
+      const cajasAbiertas = await verificarCajasDependientes(
+        id_usuario,
+        rol,
+        fecha
+      );
 
-      await actualizarCaja(caja.id_caja, {
-        caja_final,
-        Estado_caja: 0, // cerrada
+      res.json({
+        cajasAbiertas,
+        count: cajasAbiertas.length,
       });
-
-      res.json({ message: "Caja cerrada con éxito", caja_final });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Error al cerrar la caja" });
+      console.error("Error en verificarCajasDependientes:", error);
+      next(error);
     }
   },
 };

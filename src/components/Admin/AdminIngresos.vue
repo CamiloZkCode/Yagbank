@@ -10,7 +10,8 @@
         <!-- Modal Ingreso -->
         <div v-if="mostrarIngreso" class="modal-overlay">
             <div class="modal-content">
-                <span class="material-symbols-outlined close-icon" @click="mostrarIngreso = false">close</span>
+                <span class="material-symbols-outlined close-icon"
+                    @click="mostrarIngreso = false; limpiarFormulario()">close</span>
                 <h2>Registrar Ingreso</h2>
                 <form @submit.prevent="guardarIngreso">
                     <label>Tipo de Ingreso:</label>
@@ -22,30 +23,31 @@
                     </select>
 
                     <label>Supervisor:</label>
-                    <select v-model="ingreso.supervisor" required>
+                    <select v-model="ingreso.id_supervisor" required>
                         <option disabled value="">Seleccione un supervisor</option>
-                        <option v-for="s in supervisores" :key="s.nombre" :value="s.nombre">
+                        <option v-for="s in supervisores" :key="s.id" :value="s.id">
                             {{ s.nombre }}
                         </option>
                     </select>
 
                     <label>Asesor:</label>
-                    <select v-model="ingreso.asesor" :disabled="!ingreso.supervisor" required>
+                    <select v-model="ingreso.id_usuario_destino" :disabled="!ingreso.id_supervisor" required>
                         <option disabled value="">Seleccione un asesor</option>
-                        <option v-for="a in asesoresFiltrados" :key="a" :value="a">
-                            {{ a }}
+                        <option v-for="a in asesores" :key="a.id" :value="a.id">
+                            {{ a.nombre }}
                         </option>
                     </select>
 
-
-                    <input v-model="ingreso.monto" type="number" placeholder="Monto" required min="1" />
+                    <input v-model.number="ingreso.monto" type="number" placeholder="Monto" required min="1" />
 
                     <label>Fecha:</label>
                     <input v-model="ingreso.fecha" type="date" readonly />
 
-                    <textarea v-model="ingreso.descripcion" placeholder="Descripción" rows="3"></textarea>
+                    <textarea v-model="ingreso.descripcion" placeholder="Descripción" rows="3" required></textarea>
 
-                    <button type="submit">Guardar Ingreso</button>
+                    <button type="submit" :disabled="cargando">
+                        {{ cargando ? 'Guardando...' : 'Guardar Ingreso' }}
+                    </button>
                 </form>
             </div>
         </div>
@@ -88,99 +90,132 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { crearIngresoCaja } from '@/services/ingresos'
+import { obtenerSupervisores, obtenerAsesores } from '@/services/usuario'
+import alertify from 'alertifyjs'
+import 'alertifyjs/build/css/alertify.css'
 
-// Modal
+// Estados reactivos
 const mostrarIngreso = ref(false)
+const supervisores = ref([])
+const asesores = ref([])
+const filtroNombre = ref('')
+const cargando = ref(false)
+const ingresos = ref([])
 
 
-
-
-// Ingreso nuevo
+// Datos del ingreso
 const ingreso = ref({
-    tipo: '',
-    nombre: '',
+    tipo: "",
     monto: null,
     fecha: new Date().toISOString().substring(0, 10),
-    descripcion: '',
-    supervisor: '',
-    asesor: ''
+    descripcion: "",
+    id_supervisor: "",
+    id_usuario_destino: "" // equivalente a id_asesor en clientes
 })
 
-
-
-// Lista de supervisores y sus asesores
-const supervisores = ref([
-    {
-        nombre: "Supervisor A",
-        asesores: ["Asesor 1", "Asesor 2"]
-    },
-    {
-        nombre: "Supervisor B",
-        asesores: ["Asesor 3", "Asesor 4", "Asesor 5"]
+// Cargar supervisores al montar el componente
+const cargarSupervisores = async () => {
+    try {
+        supervisores.value = await obtenerSupervisores()
+    } catch (error) {
+        console.error('Error al obtener supervisores:', error)
+        alertify.error('Error al cargar supervisores')
     }
-])
-
-const asesoresFiltrados = computed(() => {
-    const sup = supervisores.value.find(s => s.nombre === ingreso.value.supervisor)
-    return sup ? sup.asesores : []
-})
-
-
-
-// Lista de ingresos (mock de prueba)
-const listaIngresos = ref([
-    {
-        id: 1,
-        tipo: 'Tarjeta con mayor interes',
-        nombre: 'Ingreso 1',
-        monto: 500,
-        fecha: '2025-08-06',
-        descripcion: 'Ingreso por tarjeta',
-        supervisor: 'Supervisor A',
-        asesor: 'Asesor 1'
-    },
-    {
-        id: 2,
-        tipo: 'Aporte capital',
-        nombre: 'Ingreso 2',
-        monto: 1000,
-        fecha: '2025-08-07',
-        descripcion: 'Aporte mensual',
-        supervisor: 'Supervisor B',
-        asesor: 'Asesor 4'
-    }
-])
-
-
-const guardarIngreso = () => {
-    const nuevo = {
-        id: Date.now(),
-        ...ingreso.value
-    }
-
-    listaIngresos.value.push(nuevo)
-    mostrarIngreso.value = false
-
-    ingreso.value = {
-        tipo: '',
-        nombre: '',
-        monto: null,
-        fecha: new Date().toISOString().substring(0, 10),
-        descripcion: '',
-        supervisor: '',
-        asesor: ''
-    }
-
 }
 
-// Filtro simple
-const filtroNombre = ref('')
-const ingresosFiltrados = computed(() =>
-    listaIngresos.value.filter(ing =>
-        ing.tipo.toLowerCase().includes(filtroNombre.value.toLowerCase())
+// Watch para cargar asesores cuando cambia el supervisor
+watch(() => ingreso.value.id_supervisor, async (nuevoId) => {
+    if (!nuevoId) {
+        asesores.value = []
+        ingreso.value.id_usuario_destino = ''
+        return
+    }
+    try {
+        asesores.value = await obtenerAsesores(nuevoId)
+    } catch (err) {
+        console.error('Error cargando asesores por supervisor:', err)
+        alertify.error('Error al cargar asesores')
+        asesores.value = []
+    }
+})
+
+// Cargar datos iniciales
+onMounted(() => {
+    cargarSupervisores()
+    // cargarIngresos() // Descomenta cuando implementes esta función
+})
+
+// Guardar ingreso
+const guardarIngreso = async () => {
+    if (cargando.value) return;
+
+    try {
+        cargando.value = true;
+
+        // Validaciones
+        if (!ingreso.value.id_usuario_destino) {
+            alertify.error("Debe seleccionar un asesor");
+            return;
+        }
+
+        if (!ingreso.value.monto || ingreso.value.monto <= 0) {
+            alertify.error("El monto debe ser mayor a cero");
+            return;
+        }
+
+        // Preparar datos
+        const datosIngreso = {
+            id_usuario_destino: ingreso.value.id_usuario_destino,
+            tipo: ingreso.value.tipo,
+            descripcion: ingreso.value.descripcion,
+            valor: parseFloat(ingreso.value.monto)
+        };
+
+        console.log("Enviando datos:", datosIngreso);
+        const response = await crearIngresoCaja(datosIngreso);
+
+        alertify.success(response.message || "Ingreso registrado correctamente");
+        mostrarIngreso.value = false;
+        limpiarFormulario();
+
+    } catch (error) {
+        console.error("Error guardando ingreso:", error);
+
+        // Manejo específico de errores
+        if (error.error === "CAJA_NO_DISPONIBLE") {
+            alertify.error(`No hay caja abierta para este asesor hoy. ${error.message}`);
+        } else if (error.error === "SERVER_ERROR") {
+            alertify.error("Error en el servidor: " + error.message);
+        } else {
+            alertify.error(error.message || "Error al registrar el ingreso");
+        }
+    } finally {
+        cargando.value = false;
+    }
+};
+// Limpiar formulario
+const limpiarFormulario = () => {
+    ingreso.value = {
+        tipo: "",
+        monto: null,
+        fecha: new Date().toISOString().substring(0, 10),
+        descripcion: "",
+        id_supervisor: "",
+        id_usuario_destino: ""
+    }
+}
+
+
+
+// Filtrar ingresos
+const ingresosFiltrados = computed(() => {
+    if (!filtroNombre.value) return ingresos.value
+    return ingresos.value.filter(ing =>
+        ing.asesor.toLowerCase().includes(filtroNombre.value.toLowerCase())
     )
-)
+})
 </script>
 
 <style scoped>
@@ -226,7 +261,7 @@ select {
     border-radius: 6px;
 }
 
-.icono-boton{
+.icono-boton {
     width: 2rem;
     height: 2rem;
     object-fit: contain;
