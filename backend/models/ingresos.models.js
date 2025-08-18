@@ -15,6 +15,30 @@ async function crearIngreso(ingreso) {
 }
 
 
+async function mostrarIngreso() {
+  const sql  =
+  `
+  SELECT
+  i.fecha,
+  i.tipo,
+  u.nombre AS usuario,
+  i.valor,
+  i.descripcion
+  FROM ingresos i
+  JOIN usuarios u ON i.usuario_id = u.id_usuario
+  ORDER BY i.fecha DESC
+  `;
+
+  const [rows] = await db.query(sql);
+  return rows;
+  
+}
+
+
 module.exports = {
   crearIngreso,
+  mostrarIngreso
 };
+
+
+

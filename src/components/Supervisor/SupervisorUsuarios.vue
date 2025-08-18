@@ -142,14 +142,32 @@ const guardarUsuario = async () => {
 
         const respuesta = await registrarUsuario(usuarioAEnviar);
 
-        alertify.success('Asesor creado correctamente', 3);
-        mostrarUsuario.value = false;
-        limpiarFormulario();
-        await cargarAsesores();
+        // ✅ Alerta igual a la del administrador
+        alertify.alert(
+            'Usuario registrado con éxito',
+            `
+                <div style="text-align: left;">
+                <strong>Nombre de usuario:</strong> ${respuesta.datos.username}<br>
+                <strong>Contraseña temporal:</strong> ${respuesta.datos.contraseña_temporal}
+                </div>
+            `,
+            async function () {
+                // Cuando se da clic en "OK"
+                mostrarUsuario.value = false;
+                limpiarFormulario();
+                await cargarAsesores();
+            }
+        ).set({
+            transition: 'fade',
+            movable: false,
+            resizable: false,
+            pinnable: false,
+            closable: true,
+        });
 
     } catch (error) {
         console.error('Error al registrar:', error);
-        alertify.error(error.response?.data?.message || error.message);
+        alertify.alert('Error', error.response?.data?.message || error.message);
     }
 };
 
@@ -390,7 +408,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 table tbody td {
-    height: 3rem;
+    height: 2rem;
     border-bottom: 1px solid var(--color-light);
     color: var(--color-dark-variant);
 }
@@ -516,7 +534,7 @@ table tbody tr:last-child td {
     }
 
     .contenedor-tabla .tabla-usuarios {
-        min-width: 120%;
+        min-width: 100%;
     }
 
     .contenedor-tabla table {

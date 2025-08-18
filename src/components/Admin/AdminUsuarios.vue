@@ -133,10 +133,13 @@
                             <tr v-if="usuarioExpandido === usuario.id">
                                 <td colspan="7" class="fila-expandida">
                                     <div class="info-extra">
-                                        <strong>Correo:</strong> {{ usuario.correo }} &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Username:</strong> {{ usuario.username || 'N/A' }}
                                         &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Estado:</strong> {{ usuario.estado_texto || 'N/A' }}
+                                    </div>
+
+                                    <div class="info-extra">
+                                        <strong>Correo:</strong> {{ usuario.correo }} &nbsp;&nbsp;|&nbsp;&nbsp;
                                     </div>
                                 </td>
                             </tr>

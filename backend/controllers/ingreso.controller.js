@@ -1,4 +1,4 @@
-const { crearIngreso } = require("../models/ingresos.models");
+const { crearIngreso, mostrarIngreso } = require("../models/ingresos.models");
 const { obtenerCajaPorUsuarioYFecha } = require("../models/caja.models");
 
 async function crearIngresoCaja(req, res) {
@@ -59,6 +59,23 @@ async function crearIngresoCaja(req, res) {
   }
 }
 
+async function obtenerIngresos(req, res) {
+  try {
+    const ingresos = await mostrarIngreso();
+    return res.status(200).json({
+      success: true,
+      data: ingresos,
+    });
+  } catch (error) {
+    console.error("Error en obtenerIngresos:", error);
+    return res.status(500).json({
+      error: "SERVER_ERROR",
+      message: error.message || "Error interno del servidor",
+    });
+  }
+}
+
 module.exports = {
   crearIngresoCaja,
+  obtenerIngresos
 };

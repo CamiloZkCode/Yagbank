@@ -65,21 +65,19 @@
                 <table class="tabla-ingresos">
                     <thead>
                         <tr>
-                            <th>ID</th>
                             <th>Fecha</th>
-                            <th>Tipo</th>
                             <th>Asesor</th>
+                            <th>Tipo</th>
                             <th>Monto</th>
                             <th>Descripción</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="ing in ingresosFiltrados" :key="ing.id">
-                            <td>{{ ing.id }}</td>
-                            <td>{{ ing.fecha }}</td>
-                            <td>{{ ing.tipo }}</td>
+                            <td>{{ formatDate(ing.fecha) }}</td>
                             <td>{{ ing.asesor }}</td>
-                            <td>{{ ing.monto }}</td>
+                            <td>{{ ing.tipo }}</td>
+                            <td>${{ ing.monto }}</td>
                             <td>{{ ing.descripcion }}</td>
                         </tr>
                     </tbody>
@@ -91,7 +89,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { crearIngresoCaja } from '@/services/ingresos'
+import { crearIngresoCaja, obtenerIngresos } from '@/services/ingresos'
 import { obtenerSupervisores, obtenerAsesores } from '@/services/usuario'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
@@ -104,6 +102,10 @@ const filtroNombre = ref('')
 const cargando = ref(false)
 const ingresos = ref([])
 
+const formatDate = (dateString) => {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('es-ES')
+}
 
 // Datos del ingreso
 const ingreso = ref({
@@ -144,8 +146,28 @@ watch(() => ingreso.value.id_supervisor, async (nuevoId) => {
 // Cargar datos iniciales
 onMounted(() => {
     cargarSupervisores()
-    // cargarIngresos() // Descomenta cuando implementes esta función
+    cargarIngresos() // Descomenta cuando implementes esta función
 })
+
+const cargarIngresos = async () => {
+    try {
+        const response = await obtenerIngresos()
+        // asumo que el backend devuelve { success: true, data: [...] }
+        if (response.success) {
+            ingresos.value = response.data.map(ing => ({
+                id: ing.id_ingreso,
+                fecha: ing.fecha,
+                tipo: ing.tipo,
+                asesor: ing.usuario,   // viene del backend como "usuario"
+                monto: ing.valor,      // viene del backend como "valor"
+                descripcion: ing.descripcion
+            }))
+        }
+    } catch (error) {
+        console.error("Error al cargar ingresos:", error)
+        alertify.error("Error al cargar ingresos")
+    }
+}
 
 // Guardar ingreso
 const guardarIngreso = async () => {

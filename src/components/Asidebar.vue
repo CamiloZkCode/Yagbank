@@ -10,7 +10,7 @@
                     <img class="icono-sidebar" src="/src/assets/icons/Home.png" alt="">
                 </router-link>
 
-                <router-link to="/usuarios" class="mi-enlace" active-class="active">
+                <router-link v-if="auth.isAdmin || auth.isSupervisor" to="/usuarios" class="mi-enlace" active-class="active">
                     <img class="icono-sidebar" src="/src/assets/icons/Usuario.png" alt="">
                 </router-link>
 
@@ -22,7 +22,7 @@
                     <img class="icono-sidebar" src="/src/assets/icons/CreditoFuncionario.png" alt="">
                 </router-link>
 
-                <router-link to="/ingresos" class="mi-enlace" active-class="active">
+                <router-link v-if="auth.isAdmin" to="/ingresos" class="mi-enlace" active-class="active">
                     <img class="icono-sidebar" src="/src/assets/icons/Ingre.png" alt="">
                 </router-link>
 
