@@ -184,22 +184,71 @@
                 <div class="bloque">
                     <h4>Datos Funcionario</h4>
                     <ul>
-                        
+
                     </ul>
                 </div>
             </div>
         </div>
+
+        <div class="contenedor-flotante">
+            <!-- Botón principal -->
+            <button class="boton-principal" type="button" @click="menuStore.toggle">
+                <img src="/src/assets/Icons/Settings.png" alt="Menu" class="icono-principal" />
+            </button>
+
+            <!-- Opciones -->
+            <ul class="opciones" :class="{ abierta: menuStore.abierto }">
+                <li v-for="(opcion, index) in opciones" :key="opcion.nombre" :style="{ '--i': index }"
+                    :class="{ show: menuStore.abierto }">
+                    <button class="boton-opcion" type="button" @click="opcion.accion">
+                        <img :src="opcion.icono" :alt="opcion.nombre" />
+                    </button>
+                </li>
+            </ul>
+        </div>
     </div>
+
+
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useMenuStore } from '@/stores/menu'
 
+
+/* --- Acordeón --- */
 const activo = ref(null)
 
 function toggle(index) {
     activo.value = activo.value === index ? null : index
 }
+
+/* --- Menú Flotante --- */
+const menuStore = useMenuStore()
+
+const opciones = [
+    {
+        nombre: 'Gmail',
+        icono: '/src/assets/icons/Gmail.png',
+        accion: () => {
+            window.open('https://mail.google.com/mail/u/0/?view=cm&fs=1&to=digitalsolucioncj@gmail.com&su=Solicitud%20de%20Soporte&body=Por%20favor%20describe%20tu%20consulta%20aquí...', '_blank')
+        }
+    },
+    {
+        nombre: 'Whatsapp',
+        icono: '/src/assets/icons/Whats.png',
+        accion: () => {
+            window.open('https://wa.me/+573228107910', '_blank')
+        }
+    },
+    {
+        nombre: 'Teléfono',
+        icono: '/src/assets/icons/tel.png',
+        accion: () => {
+            window.open('tel:3228107910')
+        }
+    }
+]
 </script>
 
 
@@ -277,5 +326,88 @@ ul {
 
 .mt-4 {
     margin-top: 2rem;
+}
+
+/*===================Settings=================*/
+.contenedor-flotante {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+.contenedor-flotante {
+    animation: pulse 2s infinite ease-in-out;
+}
+
+.boton-principal {
+    width: 60px;
+    height: 60px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    filter: drop-shadow(0 2px 5px var(--color-oscuro));
+}
+
+.boton-principal .icono-principal {
+    width: 60px;
+    height: 60px;
+}
+
+.opciones {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    bottom: 70px;
+    right: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    pointer-events: none;
+}
+
+.opciones.abierta {
+    pointer-events: auto;
+}
+
+.opciones li {
+    margin-bottom: 10px;
+    opacity: 0;
+    transform: translateY(0);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    z-index: calc(100 - var(--i));
+}
+
+.opciones li.show {
+    opacity: 1;
+    transform: translateY(calc(-1px * (3 - var(--i))));
+}
+
+.boton-opcion {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.boton-opcion:hover {
+    transform: scale(1.2);
+}
+
+.boton-opcion img {
+    width: 2.8rem;
+    height: 2.8rem;
 }
 </style>

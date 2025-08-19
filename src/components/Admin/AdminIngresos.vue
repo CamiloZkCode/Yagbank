@@ -145,8 +145,9 @@ watch(() => ingreso.value.id_supervisor, async (nuevoId) => {
 
 // Cargar datos iniciales
 onMounted(() => {
+    cargarIngresos()
     cargarSupervisores()
-    cargarIngresos() // Descomenta cuando implementes esta función
+     // Descomenta cuando implementes esta función
 })
 
 const cargarIngresos = async () => {
@@ -199,6 +200,7 @@ const guardarIngreso = async () => {
         const response = await crearIngresoCaja(datosIngreso);
 
         alertify.success(response.message || "Ingreso registrado correctamente");
+        await cargarIngresos();
         mostrarIngreso.value = false;
         limpiarFormulario();
 
