@@ -38,6 +38,47 @@ const CajaController = {
 
       const id_caja = caja.id_caja;
 
+      // Nueva sección: Crear cajas para dependientes si rol es superior
+      if (rol !== "Asesor") {
+        let dependentQuery = "";
+        let params = [];
+
+        if (rol === "Administrador") {
+          dependentQuery = `
+            SELECT u.id_usuario
+            FROM usuarios u
+            WHERE 
+              (u.id_rol = (SELECT id_rol FROM roles WHERE rol = 'Supervisor') AND u.id_administrador = ?)
+              OR
+              (u.id_rol = (SELECT id_rol FROM roles WHERE rol = 'Asesor') AND u.id_administrador IN (
+                SELECT id_usuario FROM usuarios 
+                WHERE id_rol = (SELECT id_rol FROM roles WHERE rol = 'Supervisor') 
+                AND id_administrador = ?
+              ))
+          `;
+          params = [id_usuario, id_usuario];
+        } else if (rol === "Supervisor") {
+          dependentQuery = `
+            SELECT u.id_usuario
+            FROM usuarios u
+            WHERE u.id_rol = (SELECT id_rol FROM roles WHERE rol = 'Asesor') 
+            AND u.id_administrador = ?
+          `;
+          params = [id_usuario];
+        }
+
+        const [dependents] = await db.execute(dependentQuery, params);
+
+        for (const dep of dependents) {
+          const depId = dep.id_usuario;
+          let depCaja = await obtenerCajaPorUsuarioYFecha(depId, fecha);
+          if (!depCaja) {
+            const depInicial = await obtenerCajaAnterior(depId, fecha);
+            await crearCaja(depId, fecha, depInicial);
+          }
+        }
+      }
+
       // Función auxiliar mejorada
       const calcularTotal = async (query, params, defaultValue = 0) => {
         try {
@@ -192,7 +233,8 @@ const CajaController = {
         total_ingresos: Number(cajaConsolidada.total_ingresos) || 0,
         total_gastos: Number(cajaConsolidada.total_gastos) || 0,
         clavos_dia: Number(cajaConsolidada.clavos_dia) || 0,
-        clientes_clavos_totales: Number(cajaConsolidada.clientes_clavos_totales) || 0,
+        clientes_clavos_totales:
+          Number(cajaConsolidada.clientes_clavos_totales) || 0,
         caja_final: Number(cajaConsolidada.caja_final) || 0,
         Estado_caja: 0,
       });
