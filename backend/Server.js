@@ -10,6 +10,7 @@ const prestamosRoutes =require ('./routes/prestamos.routes');
 const CajaRoutes = require('./routes/caja.routes')
 const PrestamoFuncionario  = require('./routes/funcionariocre.routes')
 const IngresoRoutes = require('./routes/ingresos.routes')
+const GastosRoutes = require('./routes/gastos.routes')
 
 const app = express();
 app.use(cors());
@@ -22,6 +23,7 @@ app.use ('/api/prestamos',prestamosRoutes);
 app.use('/api/caja', CajaRoutes);
 app.use('/api/funcionario', PrestamoFuncionario);
 app.use('/api/ingresos', IngresoRoutes)
+app.use('/api/gastos', GastosRoutes)
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

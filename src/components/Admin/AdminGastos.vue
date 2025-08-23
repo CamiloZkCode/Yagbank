@@ -1,161 +1,129 @@
 <template>
     <div>
-        <div class="contenedor-botones">
-            <button class="gastos" @click="mostrarGastos = true">
-                Registrar Gasto
-                <img class="icono-boton" src="/src/assets/Icons/GastosBoton.png" alt="">
-            </button>
-        </div>
+        <div class="contenedor-tabla">
+            <!-- Filtros -->
+            <div class="filtros">
+                <div class="filtro-nombre">
+                    <input class="filtro-nom" type="text" placeholder="Buscar por nombre" v-model="filtroNombre" />
+                    <span class="material-symbols-outlined">search</span>
+                </div>
+            </div>
 
+            <!-- Tabla de gastos -->
+            <div class="tabla-scrollable">
+                <table class="tabla-gastos">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Nombre</th>
+                            <th>Cargo</th>
+                            <th>Tipo Gasto</th>
+                            <th>Valor</th>
+                            <th></th>
 
-        <!-- Modal Gastos -->
-        <div v-if="mostrarGastos" class="modal-overlay">
-            <div class="modal-content">
-                <span class="material-symbols-outlined close-icon" @click="mostrarGastos = false">close</span>
-                <h2>Registrar Gasto</h2>
-                <form @submit.prevent="guardarGasto">
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template v-for="gasto in gastosFiltrados" :key="gasto.id_gasto">
+                            <tr>
+                                <td>{{ formatDate(gasto.fecha) }}</td>
+                                <td>{{ gasto.usuario }}</td>
+                                <td>{{ gasto.cargo }}</td>
+                                <td>{{ gasto.tipo_gasto }}</td>
+                                <td>${{ gasto.valor }}</td>
+                                <td>
+                                    <span class="material-symbols-outlined ver-mas"
+                                        @click="toggleExpand(gasto.id_gasto)">
+                                        {{ usuarioExpandido === gasto.id_gasto ? 'keyboard_double_arrow_up' :
+                                            'keyboard_double_arrow_down' }}
+                                    </span>
+                                </td>
+                            </tr>
 
-                    <!-- Tipo de Gasto -->
-                    <label>Tipo de Gasto:</label>
-                    <select v-model="gasto.tipo" required>
-                        <option disabled value="">-- Tipo de Gasto --</option>
-                        <option value="Ahorro">Ahorro</option>
-                        <option value="Retiro">Retiro</option>
-                        <option value="Gasolina">Gasolina</option>
-                        <option value="Lavada">Lavada</option>
-                        <option value="Pinchada">Pinchada</option>
-                        <option value="Cambio de Aceite">Cambio de Aceite</option>
-                        <option value="Internet Celular">Internet Celular</option>
-                        <option value="Nomina Lider">Nómina Líder</option>
-                        <option value="Nomina Encargado de Sede">Nómina Encargado de Sede</option>
-                        <option value="Nomina Auditor">Nómina Auditor</option>
-                        <option value="Servicio de Luz">Servicio de Luz</option>
-                        <option value="Servicio de Agua">Servicio de Agua</option>
-                        <option value="Servicio Internet Casa">Servicio Internet Casa</option>
-                        <option value="Compra de Moto">Compra de Moto</option>
-                        <option value="Impermeable">Impermeable</option>
-                        <option value="Casco">Casco</option>
-                        <option value="Chaleco Reflectivo">Chaleco Reflectivo</option>
-                    </select>
-
-                    <!-- Nombre del Gasto -->
-                    <label>Nombre del Gasto:</label>
-                    <input v-model="gasto.nombre" type="text" placeholder="Ingrese nombre del gasto" required />
-
-                    <!-- Valor -->
-                    <label>Valor del Gasto:</label>
-                    <input v-model="gasto.valor" type="number" placeholder="Monto" required min="1" />
-
-                    <!-- Fecha (automática) -->
-                    <label>Fecha:</label>
-                    <input v-model="gasto.fecha" type="date" readonly />
-
-                    <!-- Foto Prueba -->
-                    <label>Foto Prueba:</label>
-                    <input type="file" @change="onFileChange" accept="image/*" />
-
-                    <!-- Descripción -->
-                    <label>Descripción:</label>
-                    <textarea v-model="gasto.descripcion" placeholder="Descripción" rows="3"></textarea>
-
-                    <button type="submit">Guardar Gasto</button>
-                </form>
+                            <tr v-if="usuarioExpandido === gasto.id_gasto">
+                                <td colspan="7" class="fila-expandida">
+                                    <div class="info-extra">
+                                        <strong>Detalles:</strong> {{ gasto.descripcion || 'N/A' }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Foto:</strong> {{ gasto.foto_url || 'N/A' }}
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
         </div>
-
-
-
     </div>
-
-
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue';
+import { mostrarTodosGastos } from '@/services/gastos';
 
-// Modal
-const mostrarGastos = ref(false)
+// Estado
+const isLoading = ref(false);
+const filtroNombre = ref('');
+const gastos = ref([]);
+const usuarioExpandido = ref(null);
 
-// Gasto nuevo
-const gasto = ref({
-    tipo: '',
-    nombre: '',
-    valor: null,
-    fecha: new Date().toISOString().substring(0, 10), // Fecha automática
-    descripcion: '',
-    foto: null
-})
+// Alternar fila expandida
+const toggleExpand = (id) => {
+    usuarioExpandido.value = usuarioExpandido.value === id ? null : id;
+};
 
+// Cargar gastos al montar el componente
+onMounted(async () => {
+    await cargarGastos();
+});
 
-// Manejo de archivo
-const onFileChange = (e) => {
-    gasto.value.foto = e.target.files[0] || null
-}
-
-// Guardar gasto
-const guardarGasto = () => {
-    const nuevo = {
-        id: Date.now(),
-        ...gasto.value
+const cargarGastos = async () => {
+    try {
+        isLoading.value = true;
+        const gastosData = await mostrarTodosGastos();
+        console.log("Datos recibidos en frontend:", gastosData);
+        gastos.value = gastosData?.data ?? []; // ajustar según tu backend
+    } catch (error) {
+        console.error("Error al cargar gastos:", error.message || error);
+        alert("Error al cargar los gastos: " + (error.message || "Error desconocido"));
+    } finally {
+        isLoading.value = false;
     }
+};
 
-    listaGastos.value.push(nuevo)
-    mostrarGastos.value = false
+// Abrir foto en nueva pestaña
+const verFoto = (url) => {
+    if (url) window.open(url, '_blank');
+};
 
-    gasto.value = {
-        tipo: '',
-        nombre: '',
-        valor: null,
-        fecha: new Date().toISOString().substring(0, 10),
-        descripcion: '',
-        foto: null
-    }
+// Filtrar gastos por nombre o tipo de gasto
+const gastosFiltrados = computed(() => {
+    return gastos.value.filter(
+        (gasto) =>
+            gasto.usuario?.toLowerCase().includes(filtroNombre.value.toLowerCase()) ||
+            gasto.tipo_gasto?.toLowerCase().includes(filtroNombre.value.toLowerCase())
+    );
+});
+
+// Formatear fecha dd/mm/yyyy
+const formatDate = (dateString) => {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('es-ES')
 }
-
 </script>
 
 
 <style scoped>
-.contenedor-botones {
-    margin-top: 1.5rem;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
 
-.contenedor-botones .gastos {
-    background: var(--color-morado-4);
-}
 
-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    padding: 1.2rem;
-    font-size: 1rem;
-    background: var(--color-azul-1);
-    color: var(--color-blanco);
-    border: none;
-    border-radius: 0.4rem;
-    cursor: pointer;
-    height: 2.2rem;
-    line-height: 1;
-    box-shadow: 0 5px 6px rgba(0, 0, 0, 0.2);
-
-}
-
-.icono-boton{
+.icono-boton {
     width: 2rem;
     height: 2rem;
     object-fit: contain;
 }
 
 
-input,
-select {
+input {
     display: block;
     width: 100%;
     margin-bottom: 10px;
@@ -164,62 +132,216 @@ select {
     border-radius: 6px;
 }
 
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+.icono-boton {
+    width: 1rem;
+    height: 1rem;
+    object-fit: contain;
+    cursor: pointer;
+
+}
+
+.contenedor-tabla {
+    margin-top: 1.0rem;
+}
+
+/*=========================Filtro Tabla==========================*/
+
+.filtros {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    margin: 1rem 0 0.5rem;
     align-items: center;
-    z-index: 999;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
 }
 
-.modal-content {
-    background: var(--color-background);
-    padding: 2rem;
+.filtro-nombre {
+    display: flex;
+    align-items: center;
+    background: var(--color-blanco);
+    padding: 0 0.6rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--color-info-luz);
+    width: 16rem;
+}
+
+.filtro-nombre .filtro-nom {
+    border: none;
+    outline: none;
+    background: transparent;
+    flex: 1;
+    padding: 0.8rem;
+    font-size: 1rem;
+    justify-content: center;
+    margin: 0;
+    color: var(--color-oscuro);
+}
+
+.filtro-nombre .material-symbols-outlined {
+    margin-left: 0.5rem;
+    font-size: 1.4rem;
+    color: var(--color-oscuro);
+    cursor: pointer;
+}
+
+
+/*=====================Tabla============*/
+.tabla-scrollable {
+    max-height: 60vh;
+    overflow-x: auto;
+    white-space: nowrap;
+    margin-top: 0.5rem;
+    background: var(--color-blanco);
     border-radius: var(--card-border-radius);
-    width: 100%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    position: relative;
+    box-shadow: var(--box-shadow);
+    padding: var(--card-padding);
+    transition: all 300ms ease;
+
 }
 
-.modal-content::-webkit-scrollbar {
+.tabla-scrollable::-webkit-scrollbar {
     height: 0.5rem;
 }
 
-.modal-content::-webkit-scrollbar-track {
+.tabla-scrollable::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 0.8rem;
 }
 
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+.contenedor-tabla .tabla-gastos {
+    width: auto;
+    min-width: 100%;
+    border-collapse: collapse;
 }
 
-.close-icon {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    font-size: 28px;
-    color: var(--color-rojo-5);
-}
-
-textarea {
+.contenedor-tabla table {
+    text-align: center;
+    transition: all 300ms ease;
+    margin-top: 0.5rem;
+    font-size: 1rem;
     width: 100%;
-    resize: vertical;
-    padding: 0.5rem;
-    border: 1px solid var(--color-info-luz);
-    border-radius: 6px;
-    margin-bottom: 10px;
+    padding: 0;
+    box-shadow: none;
+    background: transparent;
 }
 
-.close-icon:hover {
-    color: var(--color-rojo-5);
+.contenedor-tabla .tabla-scrollable:hover {
+    box-shadow: none;
+}
+
+table tbody td {
+    height: 3rem;
+    border-bottom: 1px solid var(--color-light);
+    color: var(--color-dark-variant);
+}
+
+
+table tbody tr:last-child td {
+    border: none;
+}
+
+.ver-mas {
+    color: var(--color-azul-1);
+}
+
+.fila-expandida {
+    background: var(--color-blanco);
+}
+
+.info-extra {
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    color: var(--color-oscuro);
+}
+
+
+/*======================Media Querry====================*/
+
+@media screen and (max-width: 768px) {
+
+    /*==============Modales===========================*/
+    .modal-content {
+        width: 90%;
+        height: auto;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+
+    .close-icon {
+        font-size: 24px;
+        top: 8px;
+        right: 8px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+
+    .modal-content input,
+    .modal-content select {
+        font-size: 1.2rem;
+        padding: 0.6rem;
+    }
+
+    .modal-content button {
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
+    }
+
+    /*===================tabla ======================*/
+
+    input,
+    select {
+        font-size: 0.9rem;
+        padding: 0.6rem;
+    }
+
+    .filtros {
+        flex-direction: column;
+        align-items: stretch;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .filtro-cedula {
+        width: 80%;
+        max-width: 100%;
+    }
+
+    .filtro-cargo select {
+        width: 100%;
+        max-width: 100%;
+    }
+
+
+    .tabla-scrollable {
+        height: 60vh;
+    }
+
+
+    .contenedor-tabla {
+        position: relative;
+    }
+
+    .contenedor-tabla .tabla-gastos {
+        min-width: 190%;
+    }
+
+    .contenedor-tabla table {
+        width: 100%;
+        margin-top: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .contenedor-tabla .tabla-gastos td,
+    th {
+        padding: 0rem 1rem;
+    }
+
+
+
+
 }
 </style>

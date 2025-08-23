@@ -171,7 +171,6 @@ const formatDate = (date) => {
 </script>
 
 
-
 <style scoped>
 .contenedor-botones {
     margin-top: 1.5rem;
