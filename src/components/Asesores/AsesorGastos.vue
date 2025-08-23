@@ -117,7 +117,14 @@ const cargarGastos = async () => {
     try {
         isLoading.value = true;
         const response = await obtenerGastos();
-        gastos.value = response.data;
+        gastos.value = response.data.map(gasto => ({
+            id_gasto: gasto.id_gasto,
+            fecha: gasto.fecha,
+            nombre: gasto.nombre,
+            valor: gasto.valor,
+            descripcion: gasto.descripcion,
+            url_foto: gasto.url_foto || ''
+        }));
     } catch (error) {
         console.error('Error al cargar gastos:', error.message || error);
         alert('Error al cargar los gastos: ' + (error.message || 'Error desconocido'));
@@ -135,7 +142,8 @@ const guardarGasto = async () => {
             descripcion: gasto.value.descripcion,
             valor: gasto.value.valor,
         });
-        gastos.value.unshift(response.data);
+        // En lugar de unshift, recarga la lista completa como en ingresos
+        await cargarGastos();
         mostrarGastos.value = false;
 
         // Reiniciar formulario
@@ -161,13 +169,10 @@ const gastosFiltrados = computed(() => {
 });
 
 // Formatear fecha
-const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-    });
-};
+const formatDate = (dateString) => {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('es-ES')
+}
 </script>
 
 

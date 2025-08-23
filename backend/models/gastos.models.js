@@ -33,8 +33,7 @@ async function mostrarGasto(id_usuario) {
       g.url_foto
     FROM gastos g
     WHERE g.usuario_id = ?
-    ORDER BY g.fecha DESC
-  `;
+    ORDER BY g.fecha DESC, g.id_gasto DESC  `;
 
   const [rows] = await db.query(sql, [id_usuario]);
   return rows;
@@ -65,7 +64,7 @@ const mostrarGastosParaAdmin = async (id_admin) => {
           SELECT id_usuario FROM usuarios 
           WHERE id_rol = 2 AND id_administrador = ?
       ))
-    ORDER BY g.fecha DESC
+    ORDER BY g.fecha DESC, g.id_gasto DESC
   `;
   const [rows] = await db.query(sql, [id_admin, id_admin]);
   return rows;
