@@ -276,6 +276,65 @@ const CajaController = {
       next(error);
     }
   },
+
+  async cerrarCajaAutomatica(req, res, next) {
+    try {
+      const fechaHoy = new Date().toISOString().split("T")[0];
+      // Obtener todas las cajas abiertas del día actual
+      const [abiertas] = await db.execute(
+        `SELECT c.id_caja, c.id_usuario, r.rol 
+         FROM caja c 
+         JOIN usuarios u ON c.id_usuario = u.id_usuario
+         JOIN roles r ON u.id_rol = r.id_rol
+         WHERE c.fecha = ? AND c.Estado_caja = 1`,
+        [fechaHoy]
+      );
+
+      // Ordenar por rol: Asesores primero, luego Supervisores, Administradores
+      const ordenRoles = ["Asesor", "Supervisor", "Administrador"];
+      abiertas.sort(
+        (a, b) => ordenRoles.indexOf(a.rol) - ordenRoles.indexOf(b.rol)
+      );
+
+      // Cerrar cada caja
+      for (const caja of abiertas) {
+        const cajaConsolidada = await obtenerCajasPorRol(
+          caja.id_usuario,
+          caja.rol,
+          fechaHoy
+        );
+        await actualizarCaja(caja.id_caja, {
+          total_cobrado: Number(cajaConsolidada.total_cobrado) || 0,
+          total_prestado: Number(cajaConsolidada.total_prestado) || 0,
+          total_ingresos: Number(cajaConsolidada.total_ingresos) || 0,
+          total_gastos: Number(cajaConsolidada.total_gastos) || 0,
+          clavos_dia: Number(cajaConsolidada.clavos_dia) || 0,
+          clientes_clavos_totales:
+            Number(cajaConsolidada.clientes_clavos_totales) || 0,
+          caja_final: Number(cajaConsolidada.caja_final) || 0,
+          Estado_caja: 0,
+        });
+        console.log(
+          `Caja cerrada automáticamente para usuario ${caja.id_usuario} (rol: ${caja.rol})`
+        );
+      }
+
+      // Si se llama como endpoint, responder
+      if (res) {
+        res.json({
+          message: "Cierre automático de cajas completado",
+          closedCount: abiertas.length,
+        });
+      }
+    } catch (error) {
+      console.error("Error en cerrarCajaAutomatica:", error);
+      if (res) {
+        next(error);
+      } else {
+        throw error; // Para el cron, solo lanzar error para logging
+      }
+    }
+  },
 };
 
 module.exports = CajaController;

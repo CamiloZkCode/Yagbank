@@ -58,6 +58,10 @@
                     </div>
                 </form>
             </div>
+
+
+          
+
         </div>
     </div>
 </template>
@@ -145,30 +149,28 @@ const cargarCaja = async () => {
 };
 
 // Polling para actualizaciones
+// Polling para actualizaciones
 let pollingInterval;
-
-
 let notificationTimer;
+
 const checkAutoCloseTime = () => {
     const now = new Date();
     const hours = now.getHours();
     const minutes = now.getMinutes();
-    if (hours === 23 && minutes >= 50 && !cajaCerrada.value) {
-        alert('La caja se cerrará automáticamente pronto. Por favor, confirma el cuadre.');
-        // Opcional: Llama a confirmarCuadre() auto después de 10 min, pero mejor manual.
+    if (hours === 20 && minutes < 26 && !cajaCerrada.value) {
+        cargarCaja(); // Recargar para reflejar cierre automático
     }
 };
 
+onMounted(async () => {
+    await cargarCaja();
+    pollingInterval = setInterval(cargarCaja, 30000); // Actualizar cada 30 segundos
+    notificationTimer = setInterval(checkAutoCloseTime, 60000); // Chequear cada minuto
+});
 
 onUnmounted(() => {
     clearInterval(pollingInterval);
     clearInterval(notificationTimer);
-});
-
-onMounted(async () => {
-    await cargarCaja();
-    pollingInterval = setInterval(cargarCaja, 30000);
-    notificationTimer = setInterval(checkAutoCloseTime, 60000); // Chequea cada minuto
 });
 
 const confirmarCuadre = async () => {
@@ -363,6 +365,53 @@ button:hover {
 }
 
 
+/* Estilos del modal */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background: var(--color-background);
+    padding: 2rem;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+
+
+.modal-content p {
+  margin-bottom: 1rem;
+}
+
+.modal-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem; 
+}
+
+.modal-content button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  width: 150px; 
+}
 
 
 /*=============================Media Querry=========================================*/
