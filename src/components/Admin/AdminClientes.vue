@@ -169,7 +169,6 @@
                     <thead>
                     <tr>
                         <th>Cliente</th>
-                        <th>Préstamo</th>
                         <th>Supervisor</th>
                         <th>Asesor</th>
                         <th>Estado</th>
@@ -180,13 +179,12 @@
                     <tbody>
                     <template v-for="cliente in clientesFiltrados" :key="cliente.documento_cliente">
                         <tr>
-                        <td>{{ cliente.nombre }} {{ cliente.apellido }}</td>
-                        <td>${{ cliente.prestamo_activo ? formatNumber(cliente.prestamo_activo.valor_prestamo) : 'N/A' }}</td>
+                        <td>{{ cliente.nombre }} {{ cliente.apellido }} {{ cliente.referencia }}</td>
                         <td>{{ cliente.nombre_supervisor || 'N/A' }}</td>
                         <td>{{ cliente.nombre_asesor }}</td>
                         <td>
-                            <span :class="['estado-badge', cliente.estado ? 'activo' : 'inactivo']">
-                            {{ cliente.estado ? 'Activo' : 'Inactivo' }}
+                            <span :class="['estado-badge', cliente.cliente_activo == 1 ? 'activo' : 'inactivo']">
+                            {{ cliente.cliente_activo == 1 ? 'Activo' : 'Inactivo' }}
                             </span>
                         </td>
                         <td>
@@ -293,7 +291,7 @@ const clientes = ref([])
 //Estados Reactivos
 const supervisores = ref([]) // Cargar lista de supervisores
 const asesores = ref([]) // Cargar lista asesores
-//const CreditoCliente = ref([]) // Carga clientes e info sobre el prestamo
+const CreditoCliente = ref([]) // Carga clientes e info sobre el prestamo
 
 
 // Formateadores
@@ -431,7 +429,6 @@ const credito = ref({
     numero_cuotas: null,
     valor_diario: null,
     total: null,
-    fecha_finalizacion: '',
     moneda: 'USD',
     forma_pago: 'Diaria',
     interes: 20
@@ -532,11 +529,13 @@ const guardarCredito = async () => {
         alertify.alert(
             'Préstamo registrado con éxito',
             `
-    <strong>Cliente:</strong> ${datosPrestamo.documento_cliente}<br>
-    <strong>Valor:</strong> ${credito.value.valor_prestamo}<br>
-    <strong>Cuotas:</strong> ${datosPrestamo.numero_cuotas}<br>
-    <strong>Forma de pago:</strong> ${datosPrestamo.forma_pago}
-  `,
+            <div style="text-align: left;">
+                <strong>Cliente:</strong> ${datosPrestamo.documento_cliente}<br>
+                <strong>Valor:</strong> ${credito.value.valor_prestamo}<br>
+                <strong>Cuotas:</strong> ${datosPrestamo.numero_cuotas}<br>
+                <strong>Forma de pago:</strong> ${datosPrestamo.forma_pago}
+            </div>
+            `,
             function () {
                 mostrarCredito.value = false
                 resetearFormularioCredito()
@@ -546,7 +545,9 @@ const guardarCredito = async () => {
                     numero_cuotas: datosPrestamo.numero_cuotas
                 })
             }
-        ).set({ transition: 'fade', movable: false })
+        ).set({ transition: 'fade', movable: false,resizable: false,
+            pinnable: false,
+            closable: true, })
     } catch (error) {
         console.error('Error al crear préstamo:', error)
         alertify.error('Error al crear el préstamo: ' + (error.response?.data?.message || error.message))
@@ -565,7 +566,7 @@ const clientesFiltrados = computed(() => {
   
   const termino = filtroNombre.value.toLowerCase()
   return clientes.value.filter(cliente => 
-    `${cliente.nombre} ${cliente.apellido}`.toLowerCase().includes(termino) ||
+    `${cliente.nombre} ${cliente.apellido} ${cliente.referencia}`.toLowerCase().includes(termino) ||
     cliente.documento_cliente.toString().includes(termino))
 })
 

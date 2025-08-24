@@ -23,3 +23,15 @@ export async function listarClientesConPrestamos(id_admin) {
     throw err.response?.data || err
   }
 }
+
+export async function listarClientesConPrestamosSupervisor(id_supervisor) {
+  try {
+    console.log("Enviando petición a /clientes/listarClientesConPrestamos/"+id_supervisor)
+    const res = await API.get(`/clientes/listarClientesConPrestamosSupervisor/${id_supervisor}`)
+    console.log("Respuesta recibida:", res.data)
+    return res.data.clientes || []
+  } catch (err) {
+    console.error("Error en listarClientesConPrestamos:", err)
+    throw err.response?.data || err
+  }
+}

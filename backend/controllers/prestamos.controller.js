@@ -47,31 +47,36 @@ async function registrarPrestamos(req, res) {
 
     // Calcular fecha de finalización (lunes a sábado, excluyendo domingos)
     function calcularFechaFinalizacion(fechaInicio, numeroCuotas) {
-      if (!(fechaInicio instanceof Date)) {
-        throw new Error("La fecha de inicio debe ser un objeto Date válido");
-      }
-      if (
-        typeof numeroCuotas !== "number" ||
-        numeroCuotas <= 0 ||
-        !Number.isInteger(numeroCuotas)
-      ) {
-        throw new Error("El número de cuotas debe ser un entero positivo");
+    if (!(fechaInicio instanceof Date)) {
+      throw new Error("La fecha de inicio debe ser un objeto Date válido");
+    }
+    if (
+      typeof numeroCuotas !== "number" ||
+      numeroCuotas <= 0 ||
+      !Number.isInteger(numeroCuotas)
+    ) {
+      throw new Error("El número de cuotas debe ser un entero positivo");
+    }
+
+    let fechaActual = new Date(fechaInicio);
+    fechaActual.setDate(fechaActual.getDate() + 1); // empieza a contar desde mañana
+    let diasAgregados = 0;
+
+    while (diasAgregados < numeroCuotas) {
+      const diaSemana = fechaActual.getDay();
+
+      if (diaSemana !== 0) {
+        // si NO es domingo, cuenta como cuota
+        diasAgregados++;
       }
 
-      let fechaActual = new Date(fechaInicio);
-      fechaActual.setDate(fechaActual.getDate() + 1); // Inicia un día después
-      let diasAgregados = 0;
-
-      while (diasAgregados < numeroCuotas) {
-        fechaActual.setDate(fechaActual.getDate());
-        const diaSemana = fechaActual.getDay();
-        if (diaSemana !== 0) {
-          // Excluye solo domingos (0)
-          diasAgregados++;
-        }
+      if (diasAgregados < numeroCuotas) {
+        // avanzar un día solo si aún faltan cuotas
+        fechaActual.setDate(fechaActual.getDate() + 1);
       }
+    }
 
-      return fechaActual.toISOString().split("T")[0];
+    return fechaActual.toISOString().split("T")[0];
     }
 
     // Calcular valores del préstamo

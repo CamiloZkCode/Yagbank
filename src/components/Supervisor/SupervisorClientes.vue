@@ -141,72 +141,115 @@
 
 
 
-        <!-- Tabla -->
-        <div class="contenedor-tabla">
-            <div class="filtros">
+            <!-- Tabla -->
+            <div class="contenedor-tabla">
+                <div class="filtros">
                 <div class="filtro-nombre">
-                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" />
+                    <input 
+                    class="filtro-nom" 
+                    type="text" 
+                    placeholder="Busqueda por nombre" 
+                    v-model="filtroNombre"
+                    />
                     <span class="material-symbols-outlined">search</span>
                 </div>
-            </div>
+                </div>
 
-            <div class="tabla-scrollable">
+                <div class="tabla-scrollable">
                 <table class="tabla-clientes">
                     <thead>
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Prestamo</th>
-                            <th>Supervisor</th>
-                            <th>Asesor</th>
-                            <th></th>
-                            <th></th>
-                        </tr>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Asesor</th>
+                        <th>Estado</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
                     </thead>
                     <tbody>
-                        <template v-for="Clientes in CreditoCliente" :key="Clientes.id_cliente">
-                            <tr>
-                                <td>{{ Clientes.nombre }}</td>
-                                <td>${{ Clientes.prestamo_total }}</td>
-                                <td>{{ Clientes.nombre }}</td>
-                                <td>{{ Clientes.nombre }}</td>
-                                <td>
-                                    <img class="icono-boton" src="/src/assets/icons/Edit.png" alt=""
-                                        @click="abrirModalEdicion(Clientes)" title="Editar cliente">
-                                </td>
-                                <td>
-                                    <span class="material-symbols-outlined ver-mas"
-                                        @click="toggleExpand(Clientes.id_cliente)">
-                                        {{ usuarioExpandido === Clientes.id_cliente ? 'keyboard_double_arrow_up' :
-                                            'keyboard_double_arrow_down' }}
+                    <template v-for="cliente in clientesFiltrados" :key="cliente.documento_cliente">
+                        <tr>
+                        <td>{{ cliente.nombre }} {{ cliente.apellido }} {{ cliente.referencia }}</td>
+                        <td>{{ cliente.nombre_asesor }}</td>
+                        <td>
+                            <span :class="['estado-badge', cliente.cliente_activo == 1 ? 'activo' : 'inactivo']">
+                            {{ cliente.cliente_activo == 1 ? 'Activo' : 'Inactivo' }}
+                            </span>
+                        </td>
+                        <td>
+                            <img class="icono-boton" src="/src/assets/icons/Edit.png" alt=""
+                            @click="abrirModalEdicion(cliente)" title="Editar cliente">
+                        </td>
+                        <td>
+                            <span class="material-symbols-outlined ver-mas"
+                            @click="toggleExpand(cliente.documento_cliente)">
+                            {{ usuarioExpandido === cliente.documento_cliente ? 'keyboard_double_arrow_up' :
+                                'keyboard_double_arrow_down' }}
+                            </span>
+                        </td>
+                        </tr>
+                        <tr v-if="usuarioExpandido === cliente.documento_cliente">
+                        <td colspan="8" class="fila-expandida">
+                            <div class="info-extra">
+                            <strong>Documento:</strong> {{ cliente.documento_cliente }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                            <strong>Dirección:</strong> {{ cliente.direccion_casa }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                            <strong>Teléfono:</strong> {{ cliente.telefono }}
+                            </div>
+
+                            <div class="info-extra" v-if="cliente.prestamo_activo">
+                            <strong>Crédito Activo:</strong> ${{ formatNumber(cliente.prestamo_activo.valor_prestamo) }}
+                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                            <strong>Cuotas:</strong> {{ cliente.prestamo_activo.numero_cuotas }}
+                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                            <strong>Valor Diario:</strong> ${{ formatNumber(cliente.prestamo_activo.valor_diario) }}
+                            </div>
+
+                            <div class="info-extra" v-if="cliente.prestamo_activo">
+                            <strong>Inicio:</strong> {{ formatDate(cliente.prestamo_activo.fecha_inicio) }}
+                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                            <strong>Vencimiento:</strong> {{ formatDate(cliente.prestamo_activo.fecha_finalizacion) }}
+                            </div>
+
+                            <div class="historial" v-if="cliente.historial && cliente.historial.length">
+                            <h4>Historial de Préstamos</h4>
+                            <table class="tabla-historico">
+                                <thead>
+                                <tr>
+                                    <th>Valor</th>
+                                    <th>Cuotas</th>
+                                    <th>Inicio</th>
+                                    <th>Fin</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr v-for="prestamo in cliente.historial" :key="prestamo.id_prestamo">
+                                    <td>${{ formatNumber(prestamo.valor_prestamo) }}</td>
+                                    <td>{{ prestamo.numero_cuotas }}</td>
+                                    <td>{{ formatDate(prestamo.fecha_inicio) }}</td>
+                                    <td>{{ formatDate(prestamo.fecha_finalizacion) }}</td>
+                                    <td>
+                                    <span :class="['estado-badge', prestamo.estado.toLowerCase()]">
+                                        {{ prestamo.estado }}
                                     </span>
-                                </td>
-
-                            </tr>
-                            <tr v-if="usuarioExpandido === Clientes.id_cliente">
-                                <td colspan="7" class="fila-expandida">
-                                    <div class="info-extra">
-                                        <strong>Dirección:</strong> {{ Clientes.direccion }} &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Teléfono:</strong> {{ Clientes.telefono }}
-                                    </div>
-
-                                    <div class="info-extra">
-                                        <strong>Credito:</strong> ${{ Clientes.prestamo_total }}
-                                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Numero Cuotas:</strong> {{ Clientes.numero_cuotas }}
-                                    </div>
-
-                                    <div class="info-extra">
-                                        <strong>Solicitud Credito:</strong> {{ Clientes.fecha_prestamo }}
-                                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Fecha Finalización</strong> {{ Clientes.fecha_finalizacion }}
-                                    </div>
-                                </td>
-                            </tr>
-                        </template>
+                                    </td>
+                                    <td>
+                                    <button class="btn-detalle" @click="verDetallePrestamo(prestamo.id_prestamo)">
+                                        Ver detalles
+                                    </button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            </div>
+                        </td>
+                        </tr>
+                    </template>
                     </tbody>
                 </table>
+                </div>
             </div>
-        </div>
     </div>
 </template>
 
@@ -214,7 +257,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { crearClientes } from '@/services/clientes'
+import { crearClientes,listarClientesConPrestamosSupervisor } from '@/services/clientes'
 import { crearPrestamos } from '@/services/prestamos'
 import { obtenerAsesores } from '@/services/usuario'
 import alertify from 'alertifyjs'
@@ -229,12 +272,15 @@ const usuarioLogueado = computed(() => authStore.user)
 const mostrarCliente = ref(false)
 const mostrarCredito = ref(false)
 const mostrarEditarCliente = ref(false)
+const filtroNombre = ref("")
+const clientes = ref([])  // 👈 te falta esta declaración también
 
 
 
 //Estados Reactivos
 const supervisores = ref([]) // Cargar lista de supervisores
 const asesores = ref([]) // Cargar lista asesores
+const CreditoCliente = ref([]) // Carga clientes e info sobre el prestamo
 
 
 
@@ -444,20 +490,37 @@ const guardarCredito = async () => {
     }
 }
 
+
+// Carga de datos
+const cargarClientes = async () => {
+  cargando.value = true
+  try {
+    const clientesData = await listarClientesConPrestamosSupervisor(usuarioLogueado.value.id)
+    console.log("Clientes data recibido:", clientesData)
+    clientes.value = clientesData
+    console.log("Clientes en variable reactiva:", clientes.value)
+  } catch (error) {
+    console.error("Error completo:", error)
+    alertify.error(error.message || "Error al cargar los datos de clientes")
+  } finally {
+    cargando.value = false
+  }
+}
+
 // Expansión de tabla
 const usuarioExpandido = ref(null)
 const toggleExpand = (id) => {
     usuarioExpandido.value = usuarioExpandido.value === id ? null : id
 }
 
+const clientesFiltrados = computed(() => {
+  return clientes.value.filter(c =>
+    (c.nombre + " " + c.apellido)
+      .toLowerCase()
+      .includes(filtroNombre.value.toLowerCase())
+  )
+})
 
-// Datos de prueba
-const CreditoCliente = ref([
-    { id_cliente: 1001, nombre: 'María Gómez', telefono: '3123456789', direccion: 'Calle 10 #15-20', casa: 'Casa 1', numero_cuotas: 20, cuotas_pagadas: 5, cuotas_deberia: 8, abono: 100, abono_total: 500, prestamo_total: 1200, fecha_prestamo: '2025-06-15', fecha_finalizacion: '2025-11-30' },
-    { id_cliente: 1002, nombre: 'Luis Martínez', telefono: '3132223344', direccion: 'Carrera 8 #45-12', casa: 'Casa 2', numero_cuotas: 24, cuotas_pagadas: 10, cuotas_deberia: 12, abono: 150, abono_total: 1000, prestamo_total: 1500, fecha_prestamo: '2025-05-01', fecha_finalizacion: '2025-10-20' },
-    { id_cliente: 1003, nombre: 'Ana Torres', telefono: '3149998877', direccion: 'Diagonal 3 #21-18', casa: 'Casa 3', numero_cuotas: 18, cuotas_pagadas: 18, cuotas_deberia: 18, abono: 120, abono_total: 300, prestamo_total: 1500, fecha_prestamo: '2025-02-10', fecha_finalizacion: '2025-07-10' },
-    { id_cliente: 1004, nombre: 'Jorge Herrera', telefono: '3118887766', direccion: 'Av. Siempre Viva #123', casa: 'Casa 4', numero_cuotas: 12, cuotas_pagadas: 3, cuotas_deberia: 6, abono: 90, abono_total: 270, prestamo_total: 900, fecha_prestamo: '2025-07-01', fecha_finalizacion: '2025-12-15' }
-])
 
 onMounted(async () => {
     console.log('Iniciando carga de datos...');
@@ -467,10 +530,11 @@ onMounted(async () => {
         const idSupervisor = usuarioLogueado.value?.id; // Ajusta aquí según tu store
         if (idSupervisor) {
             asesores.value = await obtenerAsesores(idSupervisor);
+            
             //console.log("Asesores cargados:", asesores.value);
-        } else {
-            //console.warn("⚠ No se encontró id en el usuario logueado");
+        } else { //console.warn("⚠ No se encontró id en el usuario logueado");
         }
+        await cargarClientes()
 
         //console.log('Datos cargados completamente');
     } catch (error) {
