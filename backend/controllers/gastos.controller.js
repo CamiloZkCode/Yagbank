@@ -4,6 +4,9 @@ const {
   mostrarGastosParaAdmin,
 } = require("../models/gastos.models");
 const { obtenerCajaPorUsuarioYFecha } = require("../models/caja.models");
+const { fechaHoy } = require("../utils/fechas.js");
+
+
 
 async function crearGastoCaja(req, res) {
   try {
@@ -33,7 +36,7 @@ async function crearGastoCaja(req, res) {
     }
 
     // Obtener caja activa del usuario para hoy
-    const hoy = new Date().toISOString().split("T")[0];
+    const hoy = fechaHoy();
     
     const caja = await obtenerCajaPorUsuarioYFecha(id_usuario, hoy);
 

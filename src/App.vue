@@ -125,7 +125,6 @@ input {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  text-align: center;
   box-shadow: var(--box-shadow);
 }
 

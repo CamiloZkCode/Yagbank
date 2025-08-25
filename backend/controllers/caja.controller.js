@@ -7,11 +7,15 @@ const {
   obtenerCajaAnterior,
 } = require("../models/caja.models.js");
 const db = require("../config/db");
+const { fechaHoy } = require("../utils/fechas.js");
+
 
 const CajaController = {
   async generarCajaDiaria(req, res, next) {
     try {
-      const { id_usuario, fecha } = req.body;
+      const { id_usuario } = req.body;
+      const fecha = fechaHoy();
+
       const rol = req.user?.rol;
 
       if (!id_usuario || !fecha) {
@@ -175,9 +179,10 @@ const CajaController = {
 
   async obtenerCajaPorRol(req, res, next) {
     try {
-      const { id_usuario, rol, fecha } = req.query;
+      const { id_usuario, rol } = req.query;
+      const fecha = fechaHoy();
 
-      if (!id_usuario || !rol || !fecha) {
+      if (!id_usuario || !rol) {
         return res.status(400).json({ error: "Faltan parámetros requeridos" });
       }
 
@@ -191,12 +196,13 @@ const CajaController = {
   async cerrarCaja(req, res, next) {
     try {
       const { id_usuario, rol } = req.user;
-      const fechaHoy = new Date().toISOString().split("T")[0]; // Ahora con TZ fijado
+      const fecha = fechaHoy(); // ✅ siempre Bogotá
+      // Ahora con TZ fijado
 
       const cajasAbiertas = await verificarCajasDependientes(
         id_usuario,
         rol,
-        fechaHoy
+        fecha
       );
 
       if (cajasAbiertas.length > 0) {
@@ -210,15 +216,11 @@ const CajaController = {
         });
       }
       // 3. Obtener datos consolidados
-      const cajaConsolidada = await obtenerCajasPorRol(
-        id_usuario,
-        rol,
-        fechaHoy
-      );
+      const cajaConsolidada = await obtenerCajasPorRol(id_usuario, rol, fecha);
 
-      let cajaUsuario = await obtenerCajaPorUsuarioYFecha(id_usuario, fechaHoy);
+      let cajaUsuario = await obtenerCajaPorUsuarioYFecha(id_usuario, fecha);
       if (!cajaUsuario) {
-        const id_caja_nueva = await crearCaja(id_usuario, fechaHoy);
+        const id_caja_nueva = await crearCaja(id_usuario, fecha);
         cajaUsuario = { id_caja: id_caja_nueva, Estado_caja: 1 };
       }
 
@@ -253,13 +255,7 @@ const CajaController = {
   async verificarCajasDependientes(req, res, next) {
     try {
       const { id_usuario, rol } = req.user; // Obtenemos del token, no de query
-      const { fecha } = req.query;
-
-      if (!fecha) {
-        return res
-          .status(400)
-          .json({ error: "El parámetro fecha es requerido" });
-      }
+      const fecha = fechaHoy();
 
       const cajasAbiertas = await verificarCajasDependientes(
         id_usuario,
@@ -279,7 +275,7 @@ const CajaController = {
 
   async cerrarCajaAutomatica(req, res, next) {
     try {
-      const fechaHoy = new Date().toISOString().split("T")[0];
+      const fecha = fechaHoy();
       // Obtener todas las cajas abiertas del día actual
       const [abiertas] = await db.execute(
         `SELECT c.id_caja, c.id_usuario, r.rol 
@@ -287,7 +283,7 @@ const CajaController = {
          JOIN usuarios u ON c.id_usuario = u.id_usuario
          JOIN roles r ON u.id_rol = r.id_rol
          WHERE c.fecha = ? AND c.Estado_caja = 1`,
-        [fechaHoy]
+        [fecha]
       );
 
       // Ordenar por rol: Asesores primero, luego Supervisores, Administradores
@@ -301,7 +297,7 @@ const CajaController = {
         const cajaConsolidada = await obtenerCajasPorRol(
           caja.id_usuario,
           caja.rol,
-          fechaHoy
+          fecha
         );
         await actualizarCaja(caja.id_caja, {
           total_cobrado: Number(cajaConsolidada.total_cobrado) || 0,
