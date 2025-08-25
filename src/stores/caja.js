@@ -15,7 +15,7 @@ export const useCajaStore = defineStore('caja', () => {
     const minutes = now.getMinutes();
     const fecha = now.toISOString().split('T')[0];
 
-    if (hours === 20 && minutes >= 22 && minutes < 24) {
+    if (hours === 23 && minutes >= 40 &&  minutes <=45) { // Mostrar entre 23:40 y 23:59
       try {
         const data = await obtenerCajaPorRol({
           id_usuario: authStore.user.id,

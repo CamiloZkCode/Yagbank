@@ -1,7 +1,9 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { findUserByUsername, getRolById } = require("../models/user.models");
-const {obtenerCajaPorUsuarioYFecha, crearCaja } = require("../models/caja.models")
+const {obtenerCajaPorUsuarioYFecha, crearCaja } = require("../models/caja.models");
+const { fechaHoy } = require("../utils/fechas.js");
+
 
 async function login(req, res) {
   const { username, contraseña } = req.body;
@@ -26,10 +28,10 @@ async function login(req, res) {
   const rol = await getRolById(user.id_rol);
 
   //Creacion de caja diaria 
-  const fechaHoy = new Date().toISOString().split("T")[0];
-  let caja = await obtenerCajaPorUsuarioYFecha(user.id_usuario, fechaHoy);
+  const fecha = fechaHoy();
+  let caja = await obtenerCajaPorUsuarioYFecha(user.id_usuario, fecha);
   if (!caja) {
-    await crearCaja(user.id_usuario, fechaHoy, 0); // 0 = caja inicial por defecto
+    await crearCaja(user.id_usuario, fecha, 0); // 0 = caja inicial por defecto
   }
 
   const token = jwt.sign(

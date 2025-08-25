@@ -93,6 +93,15 @@ import { crearIngresoCaja, obtenerIngresos } from '@/services/ingresos'
 import { obtenerSupervisores, obtenerAsesores } from '@/services/usuario'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
+import moment from "moment-timezone"
+
+const obtenerFechaLocal = () => {
+    return moment().tz("America/Bogota").format("YYYY-MM-DD")
+}
+const formatDate = (dateString) => {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('es-ES')
+}
 
 // Estados reactivos
 const mostrarIngreso = ref(false)
@@ -102,16 +111,13 @@ const filtroNombre = ref('')
 const cargando = ref(false)
 const ingresos = ref([])
 
-const formatDate = (dateString) => {
-    if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('es-ES')
-}
+
 
 // Datos del ingreso
 const ingreso = ref({
     tipo: "",
     monto: null,
-    fecha: new Date().toISOString().substring(0, 10),
+    fecha: obtenerFechaLocal(),
     descripcion: "",
     id_supervisor: "",
     id_usuario_destino: "" // equivalente a id_asesor en clientes
@@ -147,7 +153,7 @@ watch(() => ingreso.value.id_supervisor, async (nuevoId) => {
 onMounted(() => {
     cargarIngresos()
     cargarSupervisores()
-     // Descomenta cuando implementes esta función
+    // Descomenta cuando implementes esta función
 })
 
 const cargarIngresos = async () => {
@@ -224,13 +230,12 @@ const limpiarFormulario = () => {
     ingreso.value = {
         tipo: "",
         monto: null,
-        fecha: new Date().toISOString().substring(0, 10),
+        fecha: obtenerFechaLocal(),
         descripcion: "",
         id_supervisor: "",
         id_usuario_destino: ""
     }
 }
-
 
 
 // Filtrar ingresos

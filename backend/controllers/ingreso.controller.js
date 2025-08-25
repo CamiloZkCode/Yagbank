@@ -1,5 +1,6 @@
 const { crearIngreso, mostrarIngreso } = require("../models/ingresos.models");
 const { obtenerCajaPorUsuarioYFecha } = require("../models/caja.models");
+const { fechaHoy } = require("../utils/fechas.js");
 
 async function crearIngresoCaja(req, res) {
   try {
@@ -21,7 +22,7 @@ async function crearIngresoCaja(req, res) {
     }
 
     // Formato de fecha corregido
-    const hoy = new Date().toISOString().split("T")[0];
+    const hoy = fechaHoy();
 
     // Verificación de caja
     const caja = await obtenerCajaPorUsuarioYFecha(id_usuario_destino, hoy);
@@ -77,5 +78,5 @@ async function obtenerIngresos(req, res) {
 
 module.exports = {
   crearIngresoCaja,
-  obtenerIngresos
+  obtenerIngresos,
 };

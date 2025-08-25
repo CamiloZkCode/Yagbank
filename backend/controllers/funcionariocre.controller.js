@@ -5,6 +5,8 @@ const {
   actualizarEstadoPrestamo,
 } = require("../models/funcionariocre.models");
 const { obtenerCajaPorUsuarioYFecha } = require("../models/caja.models");
+const { fechaHoy } = require("../utils/fechas.js");
+
 
 async function crearPrestamoFuncionario(req, res) {
   try {
@@ -20,7 +22,7 @@ async function crearPrestamoFuncionario(req, res) {
     }
 
     // Obtener caja activa del usuario para hoy
-    const hoy = new Date().toISOString().split("T")[0];
+    const hoy = fechaHoy();
     const caja = await obtenerCajaPorUsuarioYFecha(id_usuario, hoy);
     if (!caja) {
       return res.status(400).json({

@@ -77,7 +77,7 @@ const userName = computed(() => authStore.user?.nombre || 'Usuario no identifica
 const formattedDate = computed(() => formulario.value.fecha);
 
 const formulario = ref({
-    fecha: new Date().toISOString().split('T')[0],
+    fecha: "", // <-- la llenaremos con lo que venga del backend
     caja_inicial: 0,
     caja_final: 0,
     total_cobrado: 0,
@@ -96,53 +96,61 @@ const cargarCaja = async () => {
 
         // Obtener datos del backend
         const data = await obtenerCajaPorRol({
-            id_usuario: authStore.user.id,
-            rol: authStore.user.rol,
-            fecha: formulario.value.fecha
-        });
+    id_usuario: authStore.user.id,
+    rol: authStore.user.rol,
+    fecha: formulario.value.fecha
+});
 
-        // Generar/actualizar solo si caja está abierta
-        if (data.Estado_caja === 1) {
-            await GenerarCaja({
-                id_usuario: authStore.user.id,
-                fecha: formulario.value.fecha
-            });
-            // Recargar datos actualizados después de generar
-            const updatedData = await obtenerCajaPorRol({
-                id_usuario: authStore.user.id,
-                rol: authStore.user.rol,
-                fecha: formulario.value.fecha
-            });
-            // Asignar datos actualizados al formulario
-            Object.assign(formulario.value, {
-                fecha: updatedData.fecha || formulario.value.fecha,
-                caja_inicial: Number(updatedData.caja_inicial) || 0,
-                caja_final: Number(updatedData.caja_final) || 0,
-                total_cobrado: Number(updatedData.total_cobrado) || 0,
-                total_prestado: Number(updatedData.total_prestado) || 0,
-                total_ingresos: Number(updatedData.total_ingresos) || 0,
-                total_gastos: Number(updatedData.total_gastos) || 0,
-                clavos_dia: Number(updatedData.clavos_dia) || 0,
-                clientes_clavos_totales: Number(updatedData.clientes_clavos_totales) || 0,
-                Estado_caja: updatedData.Estado_caja || 1
-            });
-            cajaCerrada.value = updatedData.Estado_caja === 0;
-        } else {
-            // Si caja cerrada, asignar datos directamente
-            Object.assign(formulario.value, {
-                fecha: data.fecha || formulario.value.fecha,
-                caja_inicial: Number(data.caja_inicial) || 0,
-                caja_final: Number(data.caja_final) || 0,
-                total_cobrado: Number(data.total_cobrado) || 0,
-                total_prestado: Number(data.total_prestado) || 0,
-                total_ingresos: Number(data.total_ingresos) || 0,
-                total_gastos: Number(data.total_gastos) || 0,
-                clavos_dia: Number(data.clavos_dia) || 0,
-                clientes_clavos_totales: Number(data.clientes_clavos_totales) || 0,
-                Estado_caja: data.Estado_caja || 1
-            });
-            cajaCerrada.value = data.Estado_caja === 0;
-        }
+// ⚠️ tu backend devuelve array, así que agarra la primera caja
+const caja = Array.isArray(data) ? data[0] : data;
+if (!caja) return; // si no hay caja, no sigas
+
+// Si caja está abierta, generar/actualizar
+if (caja.Estado_caja === 1) {
+    await GenerarCaja({
+        id_usuario: authStore.user.id,
+        fecha: formulario.value.fecha
+    });
+
+    const updatedData = await obtenerCajaPorRol({
+        id_usuario: authStore.user.id,
+        rol: authStore.user.rol,
+        fecha: formulario.value.fecha
+    });
+
+    const updatedCaja = Array.isArray(updatedData) ? updatedData[0] : updatedData;
+
+    if (updatedCaja) {
+        Object.assign(formulario.value, {
+            fecha: updatedCaja.fecha || formulario.value.fecha,
+            caja_inicial: Number(updatedCaja.caja_inicial) || 0,
+            caja_final: Number(updatedCaja.caja_final) || 0,
+            total_cobrado: Number(updatedCaja.total_cobrado) || 0,
+            total_prestado: Number(updatedCaja.total_prestado) || 0,
+            total_ingresos: Number(updatedCaja.total_ingresos) || 0,
+            total_gastos: Number(updatedCaja.total_gastos) || 0,
+            clavos_dia: Number(updatedCaja.clavos_dia) || 0,
+            clientes_clavos_totales: Number(updatedCaja.clientes_clavos_totales) || 0,
+            Estado_caja: updatedCaja.Estado_caja || 1
+        });
+        cajaCerrada.value = updatedCaja.Estado_caja === 0;
+    }
+} else {
+    // Si caja cerrada, asignar datos directamente
+    Object.assign(formulario.value, {
+        fecha: caja.fecha || formulario.value.fecha,
+        caja_inicial: Number(caja.caja_inicial) || 0,
+        caja_final: Number(caja.caja_final) || 0,
+        total_cobrado: Number(caja.total_cobrado) || 0,
+        total_prestado: Number(caja.total_prestado) || 0,
+        total_ingresos: Number(caja.total_ingresos) || 0,
+        total_gastos: Number(caja.total_gastos) || 0,
+        clavos_dia: Number(caja.clavos_dia) || 0,
+        clientes_clavos_totales: Number(caja.clientes_clavos_totales) || 0,
+        Estado_caja: caja.Estado_caja || 1
+    });
+    cajaCerrada.value = caja.Estado_caja === 0;
+}
     } catch (error) {
         console.error("Error cargando caja:", error);
     }
@@ -157,7 +165,7 @@ const checkAutoCloseTime = () => {
     const now = new Date();
     const hours = now.getHours();
     const minutes = now.getMinutes();
-    if (hours === 20 && minutes < 26 && !cajaCerrada.value) {
+    if (hours === 0 && minutes < 5 && !cajaCerrada.value) {
         cargarCaja(); // Recargar para reflejar cierre automático
     }
 };
