@@ -35,3 +35,31 @@ export async function listarClientesConPrestamosSupervisor(id_supervisor) {
     throw err.response?.data || err
   }
 }
+export async function listarClientesConPrestamosAsesor(id_asesor) {
+  try {
+    console.log("Enviando petición a /clientes/listarClientesConPrestamos/"+id_asesor)
+    const res = await API.get(`/clientes/listarClientesConPrestamosAsesor/${id_asesor}`)
+    console.log("Respuesta recibida:", res.data)
+    return res.data.clientes || []
+  } catch (err) {
+    console.error("Error en listarClientesConPrestamos:", err)
+    throw err.response?.data || err
+  }
+}
+
+
+// Editar un cliente
+export async function editarCliente(documento_cliente, clienteEditado) {
+  try {
+    console.log("Enviando petición a /clientes/editarClientes/" + documento_cliente, clienteEditado)
+
+    // Mandamos los datos en el body del PUT
+    const res = await API.post(`/clientes/editarClientes/${documento_cliente}`, clienteEditado)
+
+    console.log("Respuesta recibida:", res.data)
+    return res.data // aquí devuelves la respuesta del backend
+  } catch (err) {
+    console.error("Error en editarCliente:", err)
+    throw err.response?.data || err
+  }
+}

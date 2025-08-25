@@ -273,7 +273,8 @@ const mostrarCliente = ref(false)
 const mostrarCredito = ref(false)
 const mostrarEditarCliente = ref(false)
 const filtroNombre = ref("")
-const clientes = ref([])  // 👈 te falta esta declaración también
+const clientes = ref([])  
+const cargando = ref(false)
 
 
 
@@ -282,6 +283,22 @@ const supervisores = ref([]) // Cargar lista de supervisores
 const asesores = ref([]) // Cargar lista asesores
 const CreditoCliente = ref([]) // Carga clientes e info sobre el prestamo
 
+
+// Funciones de formato
+const formatNumber = (number) => {
+  if (!number) return '0'
+  return new Intl.NumberFormat('es-CO').format(number)
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+}
 
 
 // Cliente

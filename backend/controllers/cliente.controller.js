@@ -106,6 +106,7 @@ async function obtenerInfoPrestamosCliente(req, res) {
 //Obtener clientes e historial de prestamos por el rol de supervisor
 async function obtenerInfoPrestamosClientesSupervisor(req, res) {
   const { id_usuario } = req.user; // ID del supervisor logueado
+  //console.log("ID SUPERVISOR desde token:", id_usuario);
   const conn = await db.getConnection();
 
   try {
@@ -202,6 +203,104 @@ async function obtenerInfoPrestamosClientesSupervisor(req, res) {
   }
 }
 
+// Obtener clientes e historial de préstamos por el rol de asesor
+async function obtenerInfoPrestamosClientesAsesor(req, res) {
+  const { id_usuario } = req.user; // ID del asesor logueado
+  const conn = await db.getConnection();
+
+  try {
+    // =================== CLIENTES CON PRÉSTAMO ACTIVO ===================
+    const [clientes] = await conn.query(
+      `SELECT 
+        c.documento_cliente,
+        c.nombre,
+        c.apellido,
+        c.direccion_casa,
+        c.telefono,
+        c.ocupacion,
+        c.referencia,
+        c.estado AS cliente_activo,
+        c.fecha_creacion,
+        p.id_prestamo,
+        p.valor_prestamo,
+        p.numero_cuotas,
+        p.valor_diario,
+        p.interes,
+        p.total,
+        p.fecha_inicio,
+        p.fecha_finalizacion,
+        p.estado AS estado_prestamo,
+        a.nombre AS nombre_asesor,
+        s.nombre AS nombre_supervisor,
+        a.id_usuario AS id_asesor,
+        s.id_usuario AS id_supervisor
+      FROM clientes c
+      LEFT JOIN prestamos_clientes p 
+        ON c.documento_cliente = p.documento_cliente
+        AND p.estado = 'Activo'
+      INNER JOIN usuarios a ON c.id_asesor = a.id_usuario
+      INNER JOIN usuarios s ON a.id_administrador = s.id_usuario
+      WHERE c.id_asesor = ?   -- 🔥 acá solo por asesor
+      ORDER BY c.nombre, c.apellido`,
+      [id_usuario] 
+    );
+
+    if (!clientes.length) {
+      return res.status(200).json({
+        clientes: [],
+        message: "No se encontraron clientes para este asesor"
+      });
+    }
+
+    // =================== OBTENER HISTORIAL PARA CADA CLIENTE ===================
+    const documentosClientes = clientes.map(c => c.documento_cliente);
+    const [historiales] = await conn.query(
+      `SELECT 
+        id_prestamo,
+        documento_cliente,
+        valor_prestamo,
+        numero_cuotas,
+        valor_diario,
+        interes,
+        total,
+        fecha_inicio,
+        fecha_finalizacion,
+        estado
+      FROM prestamos_clientes
+      WHERE documento_cliente IN (?)
+      ORDER BY documento_cliente, fecha_inicio DESC`,
+      [documentosClientes]
+    );
+
+    // Organizar el historial por cliente
+    const historialPorCliente = historiales.reduce((acc, prestamo) => {
+      if (!acc[prestamo.documento_cliente]) {
+        acc[prestamo.documento_cliente] = [];
+      }
+      acc[prestamo.documento_cliente].push(prestamo);
+      return acc;
+    }, {});
+
+    // Combinar datos
+    const resultado = clientes.map(cliente => ({
+      ...cliente,
+      historial: historialPorCliente[cliente.documento_cliente] || []
+    }));
+
+    return res.json({
+      clientes: resultado
+    });
+
+  } catch (error) {
+    console.error("Error en listarClientesConPrestamosAsesor:", error);
+    return res.status(500).json({
+      error: "SERVER_ERROR",
+      message: "Error interno del servidor"
+    });
+  } finally {
+    conn.release();
+  }
+}
 
 async function EditarCliente(req, res) {
   try {
@@ -209,7 +308,7 @@ async function EditarCliente(req, res) {
       return res.status(401).json({ success: false, message: "No autorizado" });
     }
 
-    const { documento } = req.params;
+    const { documento_cliente } = req.params;
     const {
       nombre,
       apellido,
@@ -224,7 +323,8 @@ async function EditarCliente(req, res) {
     // Verificar si el cliente existe
     const [clienteExistente] = await db.query(
       "SELECT documento_cliente FROM clientes WHERE documento_cliente = ?",
-      [documento]
+      [documento_cliente]
+      
     );
 
     if (!clienteExistente || clienteExistente.length === 0) {
@@ -246,14 +346,14 @@ async function EditarCliente(req, res) {
         ocupacion,
         referencia,
         id_asesor, // este es el usuario asesor asignado
-        documento
+        documento_cliente
       ]
     );
 
     // Obtener datos actualizados
     const [clienteActualizado] = await db.query(
       "SELECT * FROM clientes WHERE documento_cliente = ?",
-      [documento]
+      [documento_cliente]
     );
 
     res.json({
@@ -268,4 +368,4 @@ async function EditarCliente(req, res) {
 }
 
 
-module.exports = { obtenerInfoPrestamosCliente,obtenerInfoPrestamosClientesSupervisor };
+module.exports = { obtenerInfoPrestamosCliente,obtenerInfoPrestamosClientesSupervisor,obtenerInfoPrestamosClientesAsesor,EditarCliente };

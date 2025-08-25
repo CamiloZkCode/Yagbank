@@ -11,6 +11,7 @@
                 <img class="icono-boton" src="/src/assets/icons/NuevoCredito.png" alt="">
             </button>
         </div>
+        
 
         <!-- Modal Cliente -->
         <div v-if="mostrarCliente" class="modal-overlay">
@@ -94,6 +95,9 @@
                     <label>Forma de Pago:</label>
                     <select v-model="credito.forma_pago" required>
                         <option value="Diaria">Diaria</option>
+                        <option value="Diaria">Semanal</option>
+                        <option value="Diaria">Quincenal</option>
+                        <option value="Diaria">Mensual</option>
                     </select>
 
                     <label>Fecha de Finalización:</label>
@@ -121,21 +125,19 @@
                     <input v-model="clienteEditado.telefono" placeholder="Teléfono" />
 
                     <input v-model="clienteEditado.direccion_casa" placeholder="Dirección casa" />
-                    <input v-model="clienteEditado.direccion_trabajo" placeholder="Dirección trabajo" />
 
                     <input v-model="clienteEditado.ocupacion" placeholder="Ocupación" />
                     <input v-model="clienteEditado.referencia" placeholder="Referencia" />
 
                     <!-- Selección de supervisor -->
-                    <label>Selecciona el supervisor</label>
-                    <select v-model="clienteEditado.id_supervisor" required>
+                     <label>Selecciona el supervisor</label>
+                    <select v-model="cliente.id_supervisor">
                         <option disabled value="">Seleccione un supervisor</option>
                         <option v-for="sup in supervisores" :key="sup.id" :value="sup.id">{{ sup.nombre }}</option>
                     </select>
 
-                    <!-- Selección de asesor -->
                     <label>Selecciona el asesor</label>
-                    <select v-model="clienteEditado.id_asesor" required>
+                    <select v-model="cliente.id_asesor">
                         <option disabled value="">Seleccione un asesor</option>
                         <option v-for="asesor in asesores" :key="asesor.id" :value="asesor.id">{{ asesor.nombre }}
                         </option>
@@ -268,7 +270,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { crearClientes,listarClientesConPrestamos } from '@/services/clientes'
+import { crearClientes,listarClientesConPrestamos,editarCliente} from '@/services/clientes'
 import { crearPrestamos } from '@/services/prestamos'
 import { obtenerSupervisores, obtenerAsesores } from '@/services/usuario'
 import alertify from 'alertifyjs'
@@ -287,6 +289,11 @@ const mostrarEditarCliente = ref(false)
 const cargando = ref(false)
 const clientes = ref([])
 
+// Abrir modal de edición cargando datos del cliente
+const abrirModalEdicion = (cliente) => {
+  clienteEditado.value = { ...cliente }   // clona los datos del cliente
+  mostrarEditarCliente.value = true
+}
 
 //Estados Reactivos
 const supervisores = ref([]) // Cargar lista de supervisores
@@ -322,6 +329,20 @@ const cliente = ref({
     url_cedula: '',
     url_negocio: '',
     url_documentonegocio: ''
+})
+
+// Cliente en edición
+const clienteEditado = ref({
+  id: null,
+  nombre: "",
+  apellido: "",
+  telefono: "",
+  direccion_casa: "",
+  direccion_trabajo: "",
+  ocupacion: "",
+  referencia: "",
+  id_supervisor: "",
+  id_asesor: ""
 })
 
 const archivos = ref({
@@ -372,6 +393,39 @@ const limpiarFormulario = () => {
         id_asesor: ''
     };
 };
+
+// Limpiar formulario de edición
+const limpiarFormularioEdicion = () => {
+  clienteEditado.value = {
+    id: null,
+    nombre: "",
+    apellido: "",
+    telefono: "",
+    direccion_casa: "",
+    direccion_trabajo: "",
+    ocupacion: "",
+    referencia: "",
+    id_supervisor: "",
+    id_asesor: ""
+  }
+}
+
+const guardarEdicionCliente = async () => {
+  try {
+
+    console.log("Documento a editar:", clienteEditado.value.documento_cliente)
+    console.log("Payload:", clienteEditado.value)
+     await editarCliente(clienteEditado.value.documento_cliente, clienteEditado.value)
+    console.log("Cliente actualizado:", clienteEditado.value)
+    alertify.success("Cliente actualizado con éxito")
+    mostrarEditarCliente.value = false
+    limpiarFormularioEdicion()
+    await cargarClientes() // refresca lista
+  } catch (error) {
+    console.error("Error al actualizar cliente:", error)
+    alertify.error("No se pudo actualizar el cliente")
+  }
+}
 
 const cargarSupervisores = async () => {
     try {
