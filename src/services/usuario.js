@@ -78,3 +78,23 @@ export async function cambiarContrasena(datos) {
     throw error.response?.data || { message: "Error de conexión" };
   }
 }
+
+export async function verificarDatosUsuario() {
+  try {
+    const res = await API.get('/usuarios/verificarDatosUsuario');
+    return res.data;
+  } catch (error) {
+    console.error("Error al verificar datos del usuario", error);
+    throw error.response?.data || { message: "Error de conexión" };
+  }
+}
+
+export async function agregarDatosUsuario(datos) {
+  try {
+    const res = await API.post('/usuarios/registrarDatosUsuario', datos);
+    return res.data;
+  } catch (error) {
+    console.error("Error al cambiar datos del Usuario", error);
+    throw error.response?.data || { message: "Error de conexión" };
+  }
+}

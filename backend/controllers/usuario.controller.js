@@ -1,4 +1,5 @@
 const usuariosModel = require("../models/user.models");
+const { crearDatosUsuario, obtenerDatosUsuario } = require('../models/user.models');
 const db = require("../config/db");
 const bcrypt = require('bcrypt');
 
@@ -228,6 +229,53 @@ async function cambiarContrasena(req, res) {
 
 
 
+// Guardar datos personales de los usuarios
+async function registrarDatosUsuarios(req, res) {
+  try {
+    const id_usuario = req.user.id_usuario; // viene del JWT
+    const { rh_asesor, alergias, tel_familiar, nom_familiar } = req.body;
+
+    // Verificar si ya existen
+    const existe = await obtenerDatosUsuario(id_usuario);
+    if (existe) {
+      return res.status(400).json({ message: 'Los datos personales ya fueron registrados' });
+    }
+
+    // Crear
+    await crearDatosUsuario({
+      id_datos: id_usuario,
+      rh_asesor,
+      alergias,
+      tel_familiar,
+      nom_familiar
+    });
+
+    res.status(201).json({ message: 'Datos personales registrados correctamente' });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al registrar los datos personales' });
+  }
+}
+
+// Consultar si el asesor ya tiene datos
+async function verificarDatosUsuario(req, res) {
+  try {
+    const id_usuario = req.user.id_usuario;
+    const datos = await obtenerDatosUsuario(id_usuario);
+
+    if (!datos) {
+      return res.status(200).json({ registrado: false });
+    }
+
+    res.status(200).json({ registrado: true, datos });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al verificar datos personales' });
+  }
+}
+
+
 
 module.exports = {
   getUsuariosxAdmin,
@@ -236,5 +284,7 @@ module.exports = {
   cambiarEstadoUsuario,
   EditarUsuario,
   getAsesores,
-  cambiarContrasena
+  cambiarContrasena,
+  registrarDatosUsuarios,
+  verificarDatosUsuario
 };

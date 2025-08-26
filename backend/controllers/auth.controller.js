@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { findUserByUsername, getRolById } = require("../models/user.models");
+const { findUserByUsername, getRolById,obtenerDatosUsuario } = require("../models/user.models");
 const {obtenerCajaPorUsuarioYFecha, crearCaja } = require("../models/caja.models");
 const { fechaHoy } = require("../utils/fechas.js");
 
@@ -45,6 +45,8 @@ async function login(req, res) {
     { expiresIn: "1h" }
   );
 
+   const datosUsuario = await obtenerDatosUsuario(user.id_usuario);
+
   res.json({
     token,
     user: {
@@ -54,6 +56,8 @@ async function login(req, res) {
       id_rol: user.id_rol,
       debe_cambiar_contrasena: user.debe_cambiar_contrasena,
     },
+
+    requiereDatos: !datosUsuario // true si no existen los datos
   });
 }
 

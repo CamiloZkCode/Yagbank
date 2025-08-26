@@ -82,6 +82,31 @@ const obtenerUsuariosxAdmin = async (id_admin) => {
   return rows;
 };
 
+
+// Crear datos personales de usuario
+async function crearDatosUsuario(datos) {
+  const { id_datos, rh_asesor, alergias, tel_familiar, nom_familiar } = datos;
+
+  const [result] = await db.query(
+    `INSERT INTO datos_asesor (id_datos, rh_asesor, alergias, tel_familiar, nom_familiar)
+     VALUES (?, ?, ?, ?, ?)`,
+    [id_datos, rh_asesor, alergias || null, tel_familiar, nom_familiar]
+  );
+
+  return result.insertId;
+}
+
+// Buscar si el usuario ya tiene datos personales
+async function obtenerDatosUsuario(id_usuario) {
+  const [rows] = await db.query(
+    `SELECT * FROM datos_asesor WHERE id_datos = ?`,
+    [id_usuario]
+  );
+  return rows[0];
+}
+
+
+
 module.exports = {
   getAllUsuarios,
   findUserByUsername,
@@ -89,5 +114,7 @@ module.exports = {
   obtenerSupervisores,
   obtenerAsesores,
   obtenerUsuariosxAdmin,
-  obtenerUsuariosXSupervisor
+  obtenerUsuariosXSupervisor,
+  obtenerDatosUsuario,
+  crearDatosUsuario
 };

@@ -131,13 +131,13 @@
 
                     <!-- Selección de supervisor -->
                      <label>Selecciona el supervisor</label>
-                    <select v-model="cliente.id_supervisor">
+                    <select v-model="clienteEditado.id_supervisor">
                         <option disabled value="">Seleccione un supervisor</option>
                         <option v-for="sup in supervisores" :key="sup.id" :value="sup.id">{{ sup.nombre }}</option>
                     </select>
 
                     <label>Selecciona el asesor</label>
-                    <select v-model="cliente.id_asesor">
+                    <select v-model="clienteEditado.id_asesor">
                         <option disabled value="">Seleccione un asesor</option>
                         <option v-for="asesor in asesores" :key="asesor.id" :value="asesor.id">{{ asesor.nombre }}
                         </option>
@@ -445,6 +445,21 @@ watch(() => cliente.value.id_supervisor, async (nuevoId) => {
         asesores.value = await obtenerAsesores(nuevoId);
     } catch (err) {
         console.error('Error cargando asesores por supervisor:', err);
+        asesores.value = [];
+    }
+});
+
+// Cuando cambia el supervisor en edición, cargar asesores
+watch(() => clienteEditado.value.id_supervisor, async (nuevoId) => {
+    if (!nuevoId) {
+        asesores.value = [];
+        clienteEditado.value.id_asesor = '';
+        return;
+    }
+    try {
+        asesores.value = await obtenerAsesores(nuevoId);
+    } catch (err) {
+        console.error('Error cargando asesores por supervisor (edición):', err);
         asesores.value = [];
     }
 });
