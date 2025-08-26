@@ -98,7 +98,7 @@
                             <th>Nombre</th>
                             <th>Telefono</th>
                             <th>Cargo</th>
-                            <th>Jefe</th>
+                            <th>Lider</th>
                             <th></th>
                             <th></th>
                             <th></th>
@@ -136,10 +136,8 @@
                                         <strong>Username:</strong> {{ usuario.username || 'N/A' }}
                                         &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Estado:</strong> {{ usuario.estado_texto || 'N/A' }}
-                                    </div>
-
-                                    <div class="info-extra">
-                                        <strong>Correo:</strong> {{ usuario.correo }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Correo:</strong> {{ usuario.correo || 'N/A' }}
                                     </div>
                                 </td>
                             </tr>
@@ -618,23 +616,9 @@ table tbody tr:last-child td {
     cursor: pointer;
 }
 
-/*===========================ESTADO USUARIO========================*/
 
-.icon-estado {
-    cursor: pointer;
-    font-size: 2rem;
-    transition: color 0.3s ease;
-}
 
-.icon-activo {
-    color: #4CAF50;
-    /* Verde para activo */
-}
 
-.icon-inactivo {
-    color: #F44336;
-    /* Rojo para inactivo */
-}
 
 /*===============Fin estado Usuario ==================*/
 
@@ -642,9 +626,6 @@ table tbody tr:last-child td {
     color: var(--color-azul-1);
 }
 
-.edit {
-    color: var(--color-amarillo-2);
-}
 
 .fila-expandida {
     background: var(--color-blanco);
@@ -739,13 +720,20 @@ table tbody tr:last-child td {
     }
 
     .contenedor-tabla .tabla-usuarios {
-        min-width: 180%;
+        min-width: 200%;
+    }
+
+    .icono-boton {
+        width: 1.5rem;
+        height: 1.5rem;
+        object-fit: contain;
+        cursor: pointer;
     }
 
     .contenedor-tabla table {
         width: 100%;
         margin-top: 1rem;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .contenedor-tabla table span {

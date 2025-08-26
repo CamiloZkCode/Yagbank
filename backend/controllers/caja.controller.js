@@ -9,7 +9,6 @@ const {
 const db = require("../config/db");
 const { fechaHoy } = require("../utils/fechas.js");
 
-
 const CajaController = {
   async generarCajaDiaria(req, res, next) {
     try {
@@ -26,8 +25,8 @@ const CajaController = {
       let caja_inicial = 0;
 
       if (!caja) {
-        // Chequear caja anterior para inicial
-        caja_inicial = await obtenerCajaAnterior(id_usuario, fecha);
+        // 🔹 Siempre usar la caja anterior como base (si no hay, 0)
+        caja_inicial = (await obtenerCajaAnterior(id_usuario, fecha)) || 0;
         const id_caja = await crearCaja(id_usuario, fecha, caja_inicial);
         caja = { id_caja, caja_inicial, Estado_caja: 1 };
       } else {
@@ -77,7 +76,7 @@ const CajaController = {
           const depId = dep.id_usuario;
           let depCaja = await obtenerCajaPorUsuarioYFecha(depId, fecha);
           if (!depCaja) {
-            const depInicial = await obtenerCajaAnterior(depId, fecha);
+            const depInicial = (await obtenerCajaAnterior(depId, fecha)) || 0;
             await crearCaja(depId, fecha, depInicial);
           }
         }
@@ -137,19 +136,21 @@ const CajaController = {
         calcularTotal(`SELECT COUNT(*) AS total FROM clientes_clavo`, []),
       ]);
 
-      const total_prestado =
-        Number(total_prestado_clientes) + Number(total_prestamos_funcionarios);
+      const total_prestado = Number(total_prestado_clientes);
+      const gastos_totales =
+        Number(total_gastos) + Number(total_prestamos_funcionarios);
+
       const caja_final =
         Number(caja.caja_inicial) +
         Number(total_cobrado) +
         Number(total_ingresos) -
-        (Number(total_gastos) + Number(total_prestado));
+        (Number(gastos_totales) + Number(total_prestado));
 
       await actualizarCaja(id_caja, {
         total_cobrado,
         total_prestado,
         total_ingresos,
-        total_gastos,
+        total_gastos: gastos_totales,
         clavos_dia,
         clientes_clavos_totales,
         caja_final,

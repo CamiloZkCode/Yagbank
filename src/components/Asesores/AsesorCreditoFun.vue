@@ -14,7 +14,7 @@
                 <h2>Registrar Préstamo</h2>
                 <form @submit.prevent="guardarPrestamo">
                     <label>Fecha de Solicitud:</label>
-                    <input :value="fechaActual" type="date" readonly />
+                    <input :value="obtenerFechaLocal()" type="date" readonly />
                     <label>Valor del Préstamo:</label>
                     <input v-model="prestamo.valor_prestamo" type="number" min="1" required
                         placeholder="Ingrese el monto" />
@@ -69,6 +69,11 @@ import { useAuthStore } from '@/stores/auth';
 import { crearPrestamoFuncionario, obtenerPrestamosAceptados } from '@/services/funcionariocredito';
 import alertify from 'alertifyjs';
 import 'alertifyjs/build/css/alertify.css';
+import moment from "moment-timezone"
+
+const obtenerFechaLocal = () => {
+    return moment().tz("America/Bogota").format("YYYY-MM-DD")
+}
 
 const authStore = useAuthStore();
 const usuarioLogueado = computed(() => authStore.user);
@@ -76,8 +81,6 @@ const usuarioLogueado = computed(() => authStore.user);
 // Modales
 const mostrarPrestamo = ref(false);
 
-// Fecha actual para visualización
-const fechaActual = computed(() => new Date().toISOString().substring(0, 10));
 
 // Prestamo
 const prestamo = ref({
@@ -122,7 +125,7 @@ const guardarPrestamo = async () => {
             'Préstamo solicitado con éxito',
             `
                 <strong>Monto:</strong> ${prestamo.value.valor_prestamo}<br>
-                <strong>Fecha:</strong> ${fechaActual.value}
+                <strong>Fecha:</strong> ${obtenerFechaLocal()}
             `,
             async function () {
                 cerrarModal();

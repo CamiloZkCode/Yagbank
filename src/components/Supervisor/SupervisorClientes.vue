@@ -141,115 +141,117 @@
 
 
 
-            <!-- Tabla -->
-            <div class="contenedor-tabla">
-                <div class="filtros">
+        <!-- Tabla -->
+        <div class="contenedor-tabla">
+            <div class="filtros">
                 <div class="filtro-nombre">
-                    <input 
-                    class="filtro-nom" 
-                    type="text" 
-                    placeholder="Busqueda por nombre" 
-                    v-model="filtroNombre"
-                    />
+                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" v-model="filtroNombre" />
                     <span class="material-symbols-outlined">search</span>
                 </div>
-                </div>
+            </div>
 
-                <div class="tabla-scrollable">
+            <div class="tabla-scrollable">
                 <table class="tabla-clientes">
                     <thead>
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Asesor</th>
-                        <th>Estado</th>
-                        <th></th>
-                        <th></th>
-                    </tr>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Asesor</th>
+                            <th>Estado</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <template v-for="cliente in clientesFiltrados" :key="cliente.documento_cliente">
-                        <tr>
-                        <td>{{ cliente.nombre }} {{ cliente.apellido }} {{ cliente.referencia }}</td>
-                        <td>{{ cliente.nombre_asesor }}</td>
-                        <td>
-                            <span :class="['estado-badge', cliente.cliente_activo == 1 ? 'activo' : 'inactivo']">
-                            {{ cliente.cliente_activo == 1 ? 'Activo' : 'Inactivo' }}
-                            </span>
-                        </td>
-                        <td>
-                            <img class="icono-boton" src="/src/assets/icons/Edit.png" alt=""
-                            @click="abrirModalEdicion(cliente)" title="Editar cliente">
-                        </td>
-                        <td>
-                            <span class="material-symbols-outlined ver-mas"
-                            @click="toggleExpand(cliente.documento_cliente)">
-                            {{ usuarioExpandido === cliente.documento_cliente ? 'keyboard_double_arrow_up' :
-                                'keyboard_double_arrow_down' }}
-                            </span>
-                        </td>
-                        </tr>
-                        <tr v-if="usuarioExpandido === cliente.documento_cliente">
-                        <td colspan="8" class="fila-expandida">
-                            <div class="info-extra">
-                            <strong>Documento:</strong> {{ cliente.documento_cliente }} &nbsp;&nbsp;|&nbsp;&nbsp;
-                            <strong>Dirección:</strong> {{ cliente.direccion_casa }} &nbsp;&nbsp;|&nbsp;&nbsp;
-                            <strong>Teléfono:</strong> {{ cliente.telefono }}
-                            </div>
-
-                            <div class="info-extra" v-if="cliente.prestamo_activo">
-                            <strong>Crédito Activo:</strong> ${{ formatNumber(cliente.prestamo_activo.valor_prestamo) }}
-                            &nbsp;&nbsp;|&nbsp;&nbsp;
-                            <strong>Cuotas:</strong> {{ cliente.prestamo_activo.numero_cuotas }}
-                            &nbsp;&nbsp;|&nbsp;&nbsp;
-                            <strong>Valor Diario:</strong> ${{ formatNumber(cliente.prestamo_activo.valor_diario) }}
-                            </div>
-
-                            <div class="info-extra" v-if="cliente.prestamo_activo">
-                            <strong>Inicio:</strong> {{ formatDate(cliente.prestamo_activo.fecha_inicio) }}
-                            &nbsp;&nbsp;|&nbsp;&nbsp;
-                            <strong>Vencimiento:</strong> {{ formatDate(cliente.prestamo_activo.fecha_finalizacion) }}
-                            </div>
-
-                            <div class="historial" v-if="cliente.historial && cliente.historial.length">
-                            <h4>Historial de Préstamos</h4>
-                            <table class="tabla-historico">
-                                <thead>
-                                <tr>
-                                    <th>Valor</th>
-                                    <th>Cuotas</th>
-                                    <th>Inicio</th>
-                                    <th>Fin</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr v-for="prestamo in cliente.historial" :key="prestamo.id_prestamo">
-                                    <td>${{ formatNumber(prestamo.valor_prestamo) }}</td>
-                                    <td>{{ prestamo.numero_cuotas }}</td>
-                                    <td>{{ formatDate(prestamo.fecha_inicio) }}</td>
-                                    <td>{{ formatDate(prestamo.fecha_finalizacion) }}</td>
-                                    <td>
-                                    <span :class="['estado-badge', prestamo.estado.toLowerCase()]">
-                                        {{ prestamo.estado }}
+                        <template v-for="cliente in clientesFiltrados" :key="cliente.documento_cliente">
+                            <tr>
+                                <td>{{ cliente.nombre }} {{ cliente.apellido }} {{ cliente.referencia }}</td>
+                                <td>{{ cliente.nombre_asesor }}</td>
+                                <td>
+                                    <span
+                                        :class="['estado-badge', cliente.cliente_activo == 1 ? 'activo' : 'inactivo']">
+                                        {{ cliente.cliente_activo == 1 ? 'Activo' : 'Inactivo' }}
                                     </span>
-                                    </td>
-                                    <td>
-                                    <button class="btn-detalle" @click="verDetallePrestamo(prestamo.id_prestamo)">
-                                        Ver detalles
-                                    </button>
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
-                            </div>
-                        </td>
-                        </tr>
-                    </template>
+                                </td>
+                                <td>
+                                    <img class="icono-boton" src="/src/assets/icons/Edit.png" alt=""
+                                        @click="abrirModalEdicion(cliente)" title="Editar cliente">
+                                </td>
+                                <td>
+                                    <span class="material-symbols-outlined ver-mas"
+                                        @click="toggleExpand(cliente.documento_cliente)">
+                                        {{ usuarioExpandido === cliente.documento_cliente ? 'keyboard_double_arrow_up' :
+                                            'keyboard_double_arrow_down' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr v-if="usuarioExpandido === cliente.documento_cliente">
+                                <td colspan="8" class="fila-expandida">
+                                    <div class="info-extra">
+                                        <strong>Documento:</strong> {{ cliente.documento_cliente }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Dirección:</strong> {{ cliente.direccion_casa }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Teléfono:</strong> {{ cliente.telefono }}
+                                    </div>
+
+                                    <div class="info-extra" v-if="cliente.prestamo_activo">
+                                        <strong>Crédito Activo:</strong> ${{
+                                            formatNumber(cliente.prestamo_activo.valor_prestamo) }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Cuotas:</strong> {{ cliente.prestamo_activo.numero_cuotas }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Valor Diario:</strong> ${{
+                                            formatNumber(cliente.prestamo_activo.valor_diario) }}
+                                    </div>
+
+                                    <div class="info-extra" v-if="cliente.prestamo_activo">
+                                        <strong>Inicio:</strong> {{ formatDate(cliente.prestamo_activo.fecha_inicio) }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Vencimiento:</strong> {{
+                                            formatDate(cliente.prestamo_activo.fecha_finalizacion) }}
+                                    </div>
+
+                                    <div class="historial" v-if="cliente.historial && cliente.historial.length">
+                                        <h4>Historial de Préstamos</h4>
+                                        <table class="tabla-historico">
+                                            <thead>
+                                                <tr>
+                                                    <th>Valor</th>
+                                                    <th>Cuotas</th>
+                                                    <th>Inicio</th>
+                                                    <th>Fin</th>
+                                                    <th>Estado</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="prestamo in cliente.historial" :key="prestamo.id_prestamo">
+                                                    <td>${{ formatNumber(prestamo.valor_prestamo) }}</td>
+                                                    <td>{{ prestamo.numero_cuotas }}</td>
+                                                    <td>{{ formatDate(prestamo.fecha_inicio) }}</td>
+                                                    <td>{{ formatDate(prestamo.fecha_finalizacion) }}</td>
+                                                    <td>
+                                                        <span :class="['estado-badge', prestamo.estado.toLowerCase()]">
+                                                            {{ prestamo.estado }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn-detalle"
+                                                            @click="verDetallePrestamo(prestamo.id_prestamo)">
+                                                            Ver detalles
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
-                </div>
             </div>
+        </div>
     </div>
 </template>
 
@@ -257,11 +259,13 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { crearClientes,listarClientesConPrestamosSupervisor } from '@/services/clientes'
+import { crearClientes, listarClientesConPrestamosSupervisor } from '@/services/clientes'
 import { crearPrestamos } from '@/services/prestamos'
 import { obtenerAsesores } from '@/services/usuario'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
+import moment from "moment-timezone"
+
 
 
 
@@ -273,7 +277,7 @@ const mostrarCliente = ref(false)
 const mostrarCredito = ref(false)
 const mostrarEditarCliente = ref(false)
 const filtroNombre = ref("")
-const clientes = ref([])  
+const clientes = ref([])
 const cargando = ref(false)
 
 
@@ -284,20 +288,20 @@ const asesores = ref([]) // Cargar lista asesores
 const CreditoCliente = ref([]) // Carga clientes e info sobre el prestamo
 
 
+const obtenerFechaLocal = () => {
+    return moment().tz("America/Bogota").format("YYYY-MM-DD")
+}
+
+
 // Funciones de formato
 const formatNumber = (number) => {
-  if (!number) return '0'
-  return new Intl.NumberFormat('es-CO').format(number)
+    if (!number) return '0'
+    return new Intl.NumberFormat('es-CO').format(number)
 }
 
 const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleDateString('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('es-ES')
 }
 
 
@@ -327,19 +331,16 @@ const archivos = ref({
 // Función para guardar cliente
 const guardarCliente = async () => {
     try {
-
         cliente.value.id_supervisor = usuarioLogueado.value?.id;
         const guardar = await crearClientes(cliente.value)
-        //console.log('Cliente registrado:', cliente.value)
 
-        // ✅ La alerta de éxito ahora c ontiene la lógica para cerrar el modal
         alertify.alert(
+            'Confirmación Cliente',   // 🔹 Título personalizado
             'Cliente registrado con éxito',
-            function () {
-                // ✅ Esta función se ejecuta SÓLO cuando el usuario hace clic en 'OK'.
-                // Aquí cerramos el modal principal, limpiamos el formulario y recargamos los datos.
+            async function () {
                 mostrarCliente.value = false;
                 limpiarFormulario();
+                await cargarClientes();  // ✅ recarga la tabla
             }
         ).set({
             transition: 'fade',
@@ -369,19 +370,13 @@ const limpiarFormulario = () => {
 };
 
 
-const obtenerFechaActual = () => {
-    const hoy = new Date()
-    const year = hoy.getFullYear()
-    const month = String(hoy.getMonth() + 1).padStart(2, '0')
-    const day = String(hoy.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-}
+
 
 // Creacion Prestamo
 const credito = ref({
     documento_cliente: '',
     valor_prestamo: null,
-    fecha_solicitud: obtenerFechaActual(),
+    fecha_solicitud: obtenerFechaLocal(),
     numero_cuotas: null,
     valor_diario: null,
     total: null,
@@ -396,7 +391,7 @@ const resetearFormularioCredito = () => {
     credito.value = {
         documento_cliente: '',
         valor_prestamo: null,
-        fecha_solicitud: obtenerFechaActual(),
+        fecha_solicitud: obtenerFechaLocal(),
         numero_cuotas: null,
         valor_diario: null,
         total: null,
@@ -419,17 +414,17 @@ watch([() => credito.value.valor_prestamo, () => credito.value.numero_cuotas], (
         credito.value.total = totalConInteres.toFixed(2)
         credito.value.valor_diario = (totalConInteres / cuotas).toFixed(2)
 
-        const hoy = new Date()
-        hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset())
-        const fechaLocal = new Date(hoy)
-        fechaLocal.setDate(fechaLocal.getDate()) // Comienza un día después
+        // 🔹 Fecha de inicio según zona horaria Bogotá
+        let fechaLocal = moment().tz("America/Bogota")
+
         let dias = cuotas
         while (dias > 0) {
-            fechaLocal.setDate(fechaLocal.getDate() + 1)
-            const dia = fechaLocal.getDay()
+            fechaLocal.add(1, "day") // avanzar un día
+            const dia = fechaLocal.day()
             if (dia !== 0) dias-- // Ignora domingos
         }
-        credito.value.fecha_finalizacion = fechaLocal.toISOString().substring(0, 10)
+
+        credito.value.fecha_finalizacion = fechaLocal.format("YYYY-MM-DD")
     } else {
         credito.value.total = ""
         credito.value.valor_diario = ""
@@ -494,6 +489,7 @@ const guardarCredito = async () => {
             function () {
                 mostrarCredito.value = false
                 resetearFormularioCredito()
+                cargarClientes();
                 CreditoCliente.value.push({
                     id_cliente: datosPrestamo.documento_cliente,
                     nombre: 'Cliente ' + datosPrestamo.documento_cliente,
@@ -510,18 +506,18 @@ const guardarCredito = async () => {
 
 // Carga de datos
 const cargarClientes = async () => {
-  cargando.value = true
-  try {
-    const clientesData = await listarClientesConPrestamosSupervisor(usuarioLogueado.value.id)
-    console.log("Clientes data recibido:", clientesData)
-    clientes.value = clientesData
-    console.log("Clientes en variable reactiva:", clientes.value)
-  } catch (error) {
-    console.error("Error completo:", error)
-    alertify.error(error.message || "Error al cargar los datos de clientes")
-  } finally {
-    cargando.value = false
-  }
+    cargando.value = true
+    try {
+        const clientesData = await listarClientesConPrestamosSupervisor(usuarioLogueado.value.id)
+        console.log("Clientes data recibido:", clientesData)
+        clientes.value = clientesData
+        console.log("Clientes en variable reactiva:", clientes.value)
+    } catch (error) {
+        console.error("Error completo:", error)
+        alertify.error(error.message || "Error al cargar los datos de clientes")
+    } finally {
+        cargando.value = false
+    }
 }
 
 // Expansión de tabla
@@ -531,11 +527,11 @@ const toggleExpand = (id) => {
 }
 
 const clientesFiltrados = computed(() => {
-  return clientes.value.filter(c =>
-    (c.nombre + " " + c.apellido)
-      .toLowerCase()
-      .includes(filtroNombre.value.toLowerCase())
-  )
+    return clientes.value.filter(c =>
+        (c.nombre + " " + c.apellido)
+            .toLowerCase()
+            .includes(filtroNombre.value.toLowerCase())
+    )
 })
 
 
@@ -547,7 +543,7 @@ onMounted(async () => {
         const idSupervisor = usuarioLogueado.value?.id; // Ajusta aquí según tu store
         if (idSupervisor) {
             asesores.value = await obtenerAsesores(idSupervisor);
-            
+
             //console.log("Asesores cargados:", asesores.value);
         } else { //console.warn("⚠ No se encontró id en el usuario logueado");
         }

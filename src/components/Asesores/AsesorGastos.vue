@@ -92,6 +92,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { crearGastosCaja, obtenerGastos } from '@/services/gastos';
+import moment from "moment-timezone"
+
+const obtenerFechaLocal = () => {
+    return moment().tz("America/Bogota").format("YYYY-MM-DD")
+}
 
 // Estado
 const mostrarGastos = ref(false);
@@ -103,7 +108,7 @@ const gastos = ref([]);
 const gasto = ref({
     nombre: '',
     valor: null,
-    fecha: new Date().toISOString().substring(0, 10),
+    fecha: obtenerFechaLocal(),
     descripcion: '',
 });
 
@@ -150,7 +155,7 @@ const guardarGasto = async () => {
         gasto.value = {
             nombre: '',
             valor: null,
-            fecha: new Date().toISOString().substring(0, 10),
+            fecha: obtenerFechaLocal(),
             descripcion: '',
         };
     } catch (error) {
