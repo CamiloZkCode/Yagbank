@@ -131,13 +131,23 @@
                             </tr>
 
                             <tr v-if="usuarioExpandido === usuario.id">
-                                <td colspan="7" class="fila-expandida">
+                                <td colspan="8" class="fila-expandida">
                                     <div class="info-extra">
                                         <strong>Username:</strong> {{ usuario.username || 'N/A' }}
                                         &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Estado:</strong> {{ usuario.estado_texto || 'N/A' }}
                                         &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Correo:</strong> {{ usuario.correo || 'N/A' }}
+                                    </div>
+
+                                    <div class="info-extra">
+                                        <strong>Alergias:</strong> {{ usuario.alergias || 'N/A' }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Tipo de sangre:</strong> {{ usuario.rh_asesor || 'N/A' }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Teléfono familiar:</strong> {{ usuario.tel_familiar || 'N/A' }}
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Nombre familiar:</strong> {{ usuario.nom_familiar || 'N/A' }}
                                     </div>
                                 </td>
                             </tr>

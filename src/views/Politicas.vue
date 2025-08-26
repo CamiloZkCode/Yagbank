@@ -183,9 +183,16 @@
             <div v-show="activo === 1" class="acordeon-body">
                 <div class="bloque">
                     <h4>Datos Funcionario</h4>
-                    <ul>
+                    <p><strong>Nombre:</strong> {{ usuario.nombre || 'N/A' }}</p>
+                    <p><strong>Documento:</strong> {{ usuario.id_usuario || 'N/A' }}</p>
+                    <p><strong>Teléfono:</strong> {{ usuario.telefono || 'N/A' }}</p>
+                    <p><strong>Correo:</strong> {{ usuario.correo || 'N/A' }}</p>
+                    <p><strong>RH:</strong> {{ usuario.rh_asesor || 'N/A' }}</p>
 
-                    </ul>
+                    <h4>Datos Emergencia</h4>
+                    <p><strong>Alergias:</strong> {{ usuario.alergias || 'N/A' }}</p>
+                    <p><strong>Nombre Familiar:</strong> {{ usuario.nom_familiar || 'N/A' }}</p>
+                    <p><strong>Teléfono Familiar:</strong> {{ usuario.tel_familiar || 'N/A' }}</p>
                 </div>
             </div>
         </div>
@@ -212,43 +219,60 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useMenuStore } from '@/stores/menu'
-
+import { ref, onMounted } from 'vue';
+import { useMenuStore } from '@/stores/menu';
+import { obtenerInfoUsuario } from '@/services/usuario';
 
 /* --- Acordeón --- */
-const activo = ref(null)
+const activo = ref(null);
+const usuario = ref({}); // Estado reactivo para almacenar los datos del usuario
 
 function toggle(index) {
-    activo.value = activo.value === index ? null : index
+    activo.value = activo.value === index ? null : index;
 }
 
+/* --- Cargar datos del usuario --- */
+const cargarDatosUsuario = async () => {
+    try {
+        const datos = await obtenerInfoUsuario();
+        usuario.value = datos;
+    } catch (error) {
+        console.error('Error al cargar datos del usuario:', error);
+        usuario.value = {}; // En caso de error, inicializar como objeto vacío
+    }
+};
+
 /* --- Menú Flotante --- */
-const menuStore = useMenuStore()
+const menuStore = useMenuStore();
 
 const opciones = [
     {
         nombre: 'Gmail',
         icono: '/src/assets/icons/Gmail.png',
         accion: () => {
-            window.open('https://mail.google.com/mail/u/0/?view=cm&fs=1&to=digitalsolucioncj@gmail.com&su=Solicitud%20de%20Soporte&body=Por%20favor%20describe%20tu%20consulta%20aquí...', '_blank')
+            window.open('https://mail.google.com/mail/u/0/?view=cm&fs=1&to=digitalsolucioncj@gmail.com&su=Solicitud%20de%20Soporte&body=Por%20favor%20describe%20tu%20consulta%20aquí...', '_blank');
         }
     },
     {
         nombre: 'Whatsapp',
         icono: '/src/assets/icons/Whats.png',
         accion: () => {
-            window.open('https://wa.me/+573228107910', '_blank')
+            window.open('https://wa.me/+573228107910', '_blank');
         }
     },
     {
         nombre: 'Teléfono',
         icono: '/src/assets/icons/tel.png',
         accion: () => {
-            window.open('tel:3228107910')
+            window.open('tel:3228107910');
         }
     }
-]
+];
+
+/* --- Cargar datos al montar el componente --- */
+onMounted(async () => {
+    await cargarDatosUsuario();
+});
 </script>
 
 
@@ -301,6 +325,10 @@ const opciones = [
     border-radius: var(--border-radius-2);
 }
 
+.bloque p {
+  overflow-wrap: break-word; /* Divide palabras largas en varias líneas */
+}
+
 .bloque ol li {
     margin-bottom: 0.75rem;
 }
@@ -337,10 +365,19 @@ ul {
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
+
 .contenedor-flotante {
     animation: pulse 2s infinite ease-in-out;
 }

@@ -98,3 +98,13 @@ export async function agregarDatosUsuario(datos) {
     throw error.response?.data || { message: "Error de conexión" };
   }
 }
+
+export async function obtenerInfoUsuario() {
+  try {
+    const res = await API.get('/usuarios/infoUsuario');
+    return res.data;
+  } catch (error) {
+    console.error("Error al obtener info del Usuario", error);
+    throw error.response?.data || { message: "Error de conexión" };
+  }
+}

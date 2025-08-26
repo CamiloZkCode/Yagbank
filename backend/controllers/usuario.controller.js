@@ -1,5 +1,5 @@
 const usuariosModel = require("../models/user.models");
-const { crearDatosUsuario, obtenerDatosUsuario } = require('../models/user.models');
+const { crearDatosUsuario, obtenerDatosUsuario, informacionXUsuario } = require('../models/user.models');
 const db = require("../config/db");
 const bcrypt = require('bcrypt');
 
@@ -276,6 +276,22 @@ async function verificarDatosUsuario(req, res) {
 }
 
 
+async function getInfoUsuarioLogueado(req, res) {
+  try {
+    const id_usuario = req.user.id_usuario; // id_usuario desde el token
+    const usuario = await usuariosModel.informacionXUsuario(id_usuario);
+    if (!usuario) {
+      return res.status(404).json({ mensaje: "Usuario no encontrado" });
+    }
+    res.status(200).json(usuario);
+  } catch (error) {
+    console.error("Error al obtener información del usuario:", error);
+    res.status(500).json({ mensaje: "Error del servidor al obtener información del usuario" });
+  }
+}
+
+
+
 
 module.exports = {
   getUsuariosxAdmin,
@@ -286,5 +302,6 @@ module.exports = {
   getAsesores,
   cambiarContrasena,
   registrarDatosUsuarios,
-  verificarDatosUsuario
+  verificarDatosUsuario,
+  getInfoUsuarioLogueado,
 };

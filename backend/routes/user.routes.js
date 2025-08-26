@@ -15,6 +15,7 @@ router.post('/:id/estado',verificarToken,cambiarEstadoUsuario)
 router.post('/:id/editar', verificarToken, EditarUsuario);
 router.post('/registrarDatosUsuario',verificarToken,registrarDatosUsuarios)
 router.get('/verificarDatosUsuario',verificarToken,verificarDatosUsuario)
+router.get('/infoUsuario',verificarToken,usuariocontroller.getInfoUsuarioLogueado);
 module.exports = router; 
 
 

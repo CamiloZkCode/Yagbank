@@ -18,8 +18,6 @@ async function getRolById(id_rol) {
   return rows[0]?.rol;
 }
 
-
-
 const obtenerSupervisores = async () => {
   const [rows] = await db.query(
     "SELECT id_usuario AS id, nombre FROM usuarios WHERE id_rol = 2"
@@ -27,22 +25,21 @@ const obtenerSupervisores = async () => {
   return rows;
 };
 
-const obtenerUsuariosXSupervisor = async (id_usuario)=>{
+const obtenerUsuariosXSupervisor = async (id_usuario) => {
   const [rows] = await db.query(
-    "SELECT * from usuarios where id_administrador = ?", [
-    id_usuario,
-  ]);
+    "SELECT * from usuarios where id_administrador = ?",
+    [id_usuario]
+  );
   return rows;
-}
+};
 
-const obtenerAsesores = async(id_supervisor)=>{
+const obtenerAsesores = async (id_supervisor) => {
   const [rows] = await db.query(
-    "SELECT id_usuario As id, nombre FROM usuarios WHERE id_administrador = ?", [
- id_supervisor,
-    ]);
-    return rows;
-}
-
+    "SELECT id_usuario As id, nombre FROM usuarios WHERE id_administrador = ?",
+    [id_supervisor]
+  );
+  return rows;
+};
 
 const obtenerUsuariosxAdmin = async (id_admin) => {
   const [rows] = await db.query(
@@ -62,11 +59,16 @@ const obtenerUsuariosxAdmin = async (id_admin) => {
       END AS estado_texto,
       -- Datos del jefe directo
       jefe.nombre AS nombre_jefe,
-      jefe_rol.rol AS cargo_jefe
+      jefe_rol.rol AS cargo_jefe,
+      da.rh_asesor,
+      da.alergias,
+      da.tel_familiar,
+      da.nom_familiar
     FROM usuarios u
     JOIN roles r ON u.id_rol = r.id_rol
     LEFT JOIN usuarios jefe ON u.id_administrador = jefe.id_usuario
     LEFT JOIN roles jefe_rol ON jefe.id_rol = jefe_rol.id_rol
+    LEFT JOIN datos_asesor da ON u.id_usuario = da.id_datos
     WHERE 
       -- Supervisores directos del administrador
       (u.id_rol = 2 AND u.id_administrador = ?)
@@ -81,7 +83,6 @@ const obtenerUsuariosxAdmin = async (id_admin) => {
   );
   return rows;
 };
-
 
 // Crear datos personales de usuario
 async function crearDatosUsuario(datos) {
@@ -106,6 +107,27 @@ async function obtenerDatosUsuario(id_usuario) {
 }
 
 
+//Mostrar datos personales del usuario en el apartado de politicas
+const informacionXUsuario = async (id_usuario) =>  {
+    const sql = `
+    SELECT
+     u.id_usuario,
+     u.nombre,
+     u.telefono,
+     u.correo,
+     r.rol,
+     da.rh_asesor,
+     da.alergias,
+     da.tel_familiar,
+     da.nom_familiar
+     FROM usuarios u
+     INNER JOIN roles r ON u.id_rol = r.id_rol
+     LEFT JOIN datos_asesor da ON da.id_datos = u.id_usuario
+     WHERE u.id_usuario = ?
+     `;
+     const [rows] = await db.query(sql, [id_usuario]);
+     return rows[0];
+}
 
 module.exports = {
   getAllUsuarios,
@@ -116,5 +138,6 @@ module.exports = {
   obtenerUsuariosxAdmin,
   obtenerUsuariosXSupervisor,
   obtenerDatosUsuario,
-  crearDatosUsuario
+  crearDatosUsuario,
+  informacionXUsuario,
 };

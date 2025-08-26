@@ -31,7 +31,7 @@ app.use("/api/gastos", GastosRoutes);
 
 // Programar cierre automático de cajas a medianoche (America/Bogota)
 cron.schedule(
-  "55 23 * * *",
+  "59 23 * * *",
   async () => {
     console.log(
       "Iniciando cierre automático de cajas a las:",
