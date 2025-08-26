@@ -8,7 +8,8 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     isAuthenticated: localStorage.getItem('token') !== null,
     user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null
+    token: localStorage.getItem('token') || null,
+    requiereDatos: JSON.parse(localStorage.getItem('requiereDatos')) || false // Nuevo estado
   }),
   actions: {
     async login(username, password) {
@@ -18,13 +19,16 @@ export const useAuthStore = defineStore('auth', {
           contraseña: password
         })
 
-        const { token, user } = response.data
+        const { token, user, requiereDatos } = response.data
 
         this.isAuthenticated = true
         this.user = user
         this.token = token
+        this.requiereDatos = requiereDatos || false
+        
         localStorage.setItem('token', token)
         localStorage.setItem('user', JSON.stringify(user))
+        localStorage.setItem('requiereDatos', JSON.stringify(requiereDatos || false))
 
         if (user.debe_cambiar_contrasena) {
           alertify.alert(
@@ -35,10 +39,8 @@ export const useAuthStore = defineStore('auth', {
             }
           );
         } else {
-          
-            router.push('/inicio');
-          }
-        
+          router.push('/inicio');
+        }
 
         return true
       } catch (error) {
@@ -46,12 +48,20 @@ export const useAuthStore = defineStore('auth', {
         throw error
       }
     },
+    
+    setDatosCompletados() {
+      this.requiereDatos = false
+      localStorage.setItem('requiereDatos', JSON.stringify(false))
+    },
+    
     logout() {
       this.isAuthenticated = false
       this.user = null
       this.token = null
+      this.requiereDatos = false
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      localStorage.removeItem('requiereDatos')
     }
   },
   getters: {
