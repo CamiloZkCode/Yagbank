@@ -80,6 +80,10 @@
                             <td>${{ ing.monto }}</td>
                             <td>{{ ing.descripcion }}</td>
                         </tr>
+
+                         <tr v-if="ingresosFiltrados.length === 0">
+                            <td colspan="6">No hay ingresos registrados.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

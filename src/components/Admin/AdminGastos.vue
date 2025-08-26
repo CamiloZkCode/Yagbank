@@ -50,6 +50,10 @@
                                 </td>
                             </tr>
                         </template>
+
+                        <tr v-if="gastosFiltrados.length === 0">
+                            <td colspan="6">No hay gastos registrados.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -114,8 +118,6 @@ const formatDate = (dateString) => {
 
 
 <style scoped>
-
-
 .icono-boton {
     width: 2rem;
     height: 2rem;

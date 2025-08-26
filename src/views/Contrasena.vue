@@ -62,25 +62,25 @@ const showPasswordConfirm = ref(false)
 
 
 async function handleChangePassword() {
-  if (nuevaContrasena.value !== confirmarContrasena.value) {
-    alertify.error('Las contraseñas no coinciden')
-    return
-  }
+    if (nuevaContrasena.value !== confirmarContrasena.value) {
+        alertify.error('Las contraseñas no coinciden')
+        return
+    }
 
-  try {
-    await cambiarContrasena({
-      nuevaContrasena: nuevaContrasena.value,
-    })
+    try {
+        await cambiarContrasena({
+            nuevaContrasena: nuevaContrasena.value,
+        })
 
-    alertify.success('Contraseña actualizada correctamente')
-    setTimeout(() => {
-      authStore.logout() // corregido
-      router.push('/')
-    }, 2000)
-  } catch (err) {
-    console.error(err)
-    alertify.error(err.message || 'Error al actualizar la contraseña')
-  }
+        alertify.success('Contraseña actualizada correctamente')
+        setTimeout(() => {
+            authStore.logout() // corregido
+            router.push('/')
+        }, 2000)
+    } catch (err) {
+        console.error(err)
+        alertify.error(err.message || 'Error al actualizar la contraseña')
+    }
 }
 </script>
 
@@ -139,8 +139,12 @@ main {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: var(--color-background);
+    background-image: url('@/assets/img/fondo-login.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     margin: 0;
+    padding: 1rem;
 }
 
 .contenedor {
@@ -148,19 +152,21 @@ main {
     grid-template-columns: 1fr 1fr;
     width: 850px;
     height: 550px;
-    background: var(--color-blanco);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: var(--card-border-radius);
     box-shadow: var(--box-shadow);
     overflow: hidden;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .toggle-box {
-    background: var(--color-blanco);
+    background: transparent;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 2rem;
-    color: var(--color-oscuro);
+    color: var(--color-blanco);
     text-align: center;
 }
 
@@ -177,14 +183,14 @@ main {
 .toggle-panel h1 {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
-    color: var(--color-oscuro);
+    color: var(--color-blanco);
 }
 
 .toggle-panel .empresa {
     font-size: 1.5rem;
     margin-bottom: 1rem;
     font-weight: 700;
-    color: var(--color-oscuro);
+    color: var(--color-blanco);
 }
 
 .logo {
@@ -195,7 +201,7 @@ main {
 
 .toggle-panel .mensaje {
     font-size: 1rem;
-    color: var(--color-dark-variant);
+    color: var(--color-blanco);
     margin-top: 1rem;
     max-width: 300px;
 }
@@ -204,12 +210,11 @@ main {
 
 /* ⚪ Panel derecho */
 .box-formulario {
-    background-color: var(--color-blanco);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    color: var(--color-oscuro);
+    color: var(--color-blanco);
     text-align: center;
 }
 
@@ -220,7 +225,7 @@ main {
 h1 {
     font-weight: 800;
     font-size: 1.8rem;
-    color: var(--color-oscuro);
+    color: var(--color-blanco);
     margin-bottom: 1.5rem;
 }
 
@@ -262,16 +267,20 @@ input:focus {
 }
 
 button {
-    width: 50%;
-    padding: 0.75rem;
-    background: var(--color-azul-1);
-    color: var(--color-blanco);
-    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 1.2rem;
     font-size: 1rem;
+    background: var(--color-rojo-5);
+    color: var(--color-blanco);
     border: none;
-    border-radius: var(--border-radius-2);
+    border-radius: 0.4rem;
     cursor: pointer;
-    transition: 0.3s ease;
+    height: 2.2rem;
+    line-height: 1;
+    box-shadow: 0 5px 6px rgba(0, 0, 0, 0.2);
 }
 
 button:hover {

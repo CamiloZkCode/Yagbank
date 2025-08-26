@@ -7,7 +7,7 @@
     
     <!-- Modal para datos personales -->
     <div v-if="mostrarModalDatos" class="modal-overlay">
-      <div class="modal-container">
+      <div class="modal-content">
         <div class="modal-header">
           <h2>Completar Datos Personales</h2>
           <p>Es necesario completar esta información para continuar</p>
@@ -59,7 +59,7 @@
           
           <div class="modal-actions">
             <button type="submit" class="btn-primary" :disabled="cargando">
-              {{ cargando ? 'Guardando...' : 'Guardar y Continuar' }}
+              {{ cargando ? 'Guardando...' : 'Aceptar' }}
             </button>
           </div>
         </form>
@@ -139,27 +139,54 @@ const guardarDatos = async () => {
 </script>
 
 <style scoped>
-/* Estilos para el modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+
+input,
+select {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid var(--color-info-luz);
+    border-radius: 6px;
 }
 
-.modal-container {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background: var(--color-background);
+    padding: 2rem;
+    border-radius: var(--card-border-radius);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+
+.modal-content::-webkit-scrollbar {
+    height: 0.5rem;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0.8rem;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .modal-header {

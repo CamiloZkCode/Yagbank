@@ -152,6 +152,10 @@
                                 </td>
                             </tr>
                         </template>
+
+                        <tr v-if="usuariosFiltrados.length === 0">
+                            <td colspan="6">No hay Funcionarios registrados.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

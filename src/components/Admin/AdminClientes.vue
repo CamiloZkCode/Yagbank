@@ -193,7 +193,7 @@
                                     <span class="material-symbols-outlined ver-mas"
                                         @click="toggleExpand(cliente.documento_cliente)">
                                         {{ usuarioExpandido === cliente.documento_cliente ? 'keyboard_double_arrow_up' :
-                                        'keyboard_double_arrow_down' }}
+                                            'keyboard_double_arrow_down' }}
                                     </span>
                                 </td>
                             </tr>
@@ -205,23 +205,6 @@
                                         <strong>Dirección:</strong> {{ cliente.direccion_casa }}
                                         &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Teléfono:</strong> {{ cliente.telefono }}
-                                    </div>
-
-                                    <div class="info-extra" v-if="cliente.prestamo_activo">
-                                        <strong>Crédito Activo:</strong> ${{
-                                            formatNumber(cliente.prestamo_activo.valor_prestamo) }}
-                                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Cuotas:</strong> {{ cliente.prestamo_activo.numero_cuotas }}
-                                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Valor Diario:</strong> ${{
-                                            formatNumber(cliente.prestamo_activo.valor_diario) }}
-                                    </div>
-
-                                    <div class="info-extra" v-if="cliente.prestamo_activo">
-                                        <strong>Inicio:</strong> {{ formatDate(cliente.prestamo_activo.fecha_inicio) }}
-                                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Vencimiento:</strong> {{
-                                            formatDate(cliente.prestamo_activo.fecha_finalizacion) }}
                                     </div>
 
                                     <div class="historial" v-if="cliente.historial && cliente.historial.length">
@@ -249,7 +232,8 @@
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <img class="icono-boton" src="/src/assets/Icons/ver-mas.png" alt=""  @click="verDetallePrestamo(prestamo.id_prestamo)">
+                                                        <img class="icono-boton" src="/src/assets/Icons/ver-mas.png"
+                                                            alt="" @click="verDetallePrestamo(prestamo.id_prestamo)">
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -258,6 +242,11 @@
                                 </td>
                             </tr>
                         </template>
+
+                        <tr v-if="clientesFiltrados.length === 0">
+                            <td colspan="6">No hay creditos registrados.</td>
+                        </tr>
+
                     </tbody>
                 </table>
             </div>
@@ -682,7 +671,6 @@ button {
     height: 2.2rem;
     line-height: 1;
     box-shadow: 0 5px 6px rgba(0, 0, 0, 0.2);
-
 }
 
 
@@ -836,7 +824,7 @@ input[type="number"]::-webkit-inner-spin-button {
     text-align: center;
     transition: all 300ms ease;
     margin-top: 0.5rem;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     width: 100%;
     padding: 0;
     box-shadow: none;
@@ -859,6 +847,9 @@ table tbody tr:last-child td {
     border: none;
 }
 
+.estado-badge {
+    font-size: 1rem;
+}
 
 .ver-mas {
     cursor: pointer;
@@ -875,8 +866,29 @@ table tbody tr:last-child td {
     font-size: 0.95rem;
 }
 
-.historial{
+.historial {
     margin-top: 1rem;
+}
+
+.historial td {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+
+}
+
+.estado-badge.activo {
+    font-size: 1rem;
+    color: var(--color-aprobado-1);
+}
+
+.estado-badge.cancelado {
+    font-size: 1rem;
+    color: var(--color-rojo-5);
+}
+
+.estado-badge.liquidado {
+    font-size: 1rem;
+    color: var(--color-amarillo-2);
 }
 
 /*======================Media Querry====================*/
@@ -975,10 +987,31 @@ table tbody tr:last-child td {
         white-space: normal;
     }
 
-    .contenedor-tabla table span {
+    .estado-badge {
+        font-size: 1rem;
+    }
+
+    .estado-badge.activo {
+        font-size: 1rem;
+        color: var(--color-aprobado-1);
+    }
+
+    .estado-badge.cancelado {
+        font-size: 1rem;
+        color: var(--color-rojo-5);
+    }
+
+    .estado-badge.liquidado {
+        font-size: 1rem;
+        color: var(--color-amarillo-2);
+    }
+
+    .estado-badge .contenedor-tabla table span {
         font-size: 1.5rem;
         cursor: pointer;
     }
+
+
 
     .fila-expandida {
         font-size: 0.9rem;

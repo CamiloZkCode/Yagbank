@@ -82,6 +82,9 @@
                             <td>${{ gasto.valor }}</td>
                             <td>{{ gasto.descripcion }}</td>
                         </tr>
+                         <tr v-if="gastosFiltrados.length === 0">
+                            <td colspan="6">No hay gastos registrados.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

@@ -301,7 +301,7 @@ aside .sidebar .mi-enlace:last-child {
 
 aside .sidebar .mi-enlace.active {
     background: var(--color-light);
-    color: var(--color-azul-1);
+    color: var(--color-rojo-5);
     margin-left: 0;
 }
 
@@ -309,16 +309,16 @@ aside .sidebar .mi-enlace.active:before {
     content: "";
     width: 6px;
     height: 100%;
-    background: var(--color-azul-1);
+    background: var(--color-rojo-5);
 }
 
 aside .sidebar .mi-enlace.active span {
-    color: var(--color-azul-1);
+    color: var(--color-rojo-5);
     margin-left: calc(1rem - 3px);
 }
 
 aside .sidebar .mi-enlace:hover {
-    color: var(--color-azul-1);
+    color: var(--color-rojo-5);
 }
 
 aside .sidebar .mi-enlace:hover span {

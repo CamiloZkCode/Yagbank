@@ -65,13 +65,17 @@
                                         <strong>Username:</strong> {{ usuario.username || 'N/A' }}
                                         &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Estado:</strong> {{ usuario.estado === 1 ? 'Activo' : 'Inactivo' }}
-                                    </div>
-                                    <div class="info-extra">
+                                        &nbsp;&nbsp;|&nbsp;&nbsp;
                                         <strong>Correo:</strong> {{ usuario.correo }}
                                     </div>
                                 </td>
                             </tr>
                         </template>
+
+                        <tr v-if="usuariosFiltrados.length === 0">
+                            <td colspan="6">No hay Funcionarios registrados.</td>
+                        </tr>
+                        
                     </tbody>
                 </table>
             </div>
@@ -418,39 +422,17 @@ table tbody tr:last-child td {
     border: none;
 }
 
-.delete,
-.ver-mas,
-.edit {
-    cursor: pointer;
-}
 
-/*===========================ESTADO USUARIO========================*/
 
-.icon-estado {
-    cursor: pointer;
-    font-size: 2rem;
-    transition: color 0.3s ease;
-}
 
-.icon-activo {
-    color: #4CAF50;
-    /* Verde para activo */
-}
-
-.icon-inactivo {
-    color: #F44336;
-    /* Rojo para inactivo */
-}
 
 /*===============Fin estado Usuario ==================*/
 
 .ver-mas {
     color: var(--color-azul-1);
+    cursor: pointer;
 }
 
-.edit {
-    color: var(--color-amarillo-2);
-}
 
 .fila-expandida {
     background: var(--color-blanco);

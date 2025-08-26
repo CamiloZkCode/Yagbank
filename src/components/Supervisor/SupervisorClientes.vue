@@ -184,6 +184,8 @@
                                     </span>
                                 </td>
                             </tr>
+
+
                             <tr v-if="usuarioExpandido === cliente.documento_cliente">
                                 <td colspan="8" class="fila-expandida">
                                     <div class="info-extra">
@@ -223,6 +225,8 @@
                                                     <th>Estado</th>
                                                     <th>Acciones</th>
                                                 </tr>
+
+
                                             </thead>
                                             <tbody>
                                                 <tr v-for="prestamo in cliente.historial" :key="prestamo.id_prestamo">
@@ -242,12 +246,19 @@
                                                         </button>
                                                     </td>
                                                 </tr>
+
+
                                             </tbody>
                                         </table>
                                     </div>
                                 </td>
                             </tr>
                         </template>
+                        
+                        <tr v-if="clientesFiltrados.length === 0">
+                            <td colspan="6">No hay creditos registrados.</td>
+                        </tr>
+
                     </tbody>
                 </table>
             </div>
@@ -741,7 +752,7 @@ input[type="number"]::-webkit-inner-spin-button {
     text-align: center;
     transition: all 300ms ease;
     margin-top: 0.5rem;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     width: 100%;
     padding: 0;
     box-shadow: none;
@@ -779,26 +790,32 @@ table tbody tr:last-child td {
     font-size: 0.95rem;
 }
 
-.calendario-cuotas {
-    display: flex;
-    justify-content: center;
+.historial {
+    margin-top: 1rem;
+
 }
 
-.grid-cuotas {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
+.tabla-historico td {
     margin-top: 0.5rem;
-    width: 300px;
+    font-size: 1.1rem;
+
 }
 
-.cuota {
-    background: var(--color-blanco);
-    border: 1px solid var(--color-info-gris);
-    text-align: center;
-    padding: 0.8rem;
-    border-radius: 5px;
+.estado-badge.activo {
+    font-size: 1rem;
+    color: var(--color-aprobado-1);
 }
+
+.estado-badge.cancelado {
+    font-size: 1rem;
+    color: var(--color-rojo-5);
+}
+
+.estado-badge.liquidado {
+    font-size: 1rem;
+    color: var(--color-amarillo-2);
+}
+
 
 /*======================Media Querry====================*/
 
@@ -880,7 +897,7 @@ table tbody tr:last-child td {
     .contenedor-tabla table {
         width: 100%;
         margin-top: 1rem;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .contenedor-tabla .tabla-clientes td,
@@ -903,6 +920,21 @@ table tbody tr:last-child td {
 
     .fila-expandida .info-extra {
         white-space: initial;
+    }
+
+    .estado-badge.activo {
+        font-size: 1rem;
+        color: var(--color-aprobado-1);
+    }
+
+    .estado-badge.cancelado {
+        font-size: 1rem;
+        color: var(--color-rojo-5);
+    }
+
+    .estado-badge.liquidado {
+        font-size: 1rem;
+        color: var(--color-amarillo-2);
     }
 }
 </style>
