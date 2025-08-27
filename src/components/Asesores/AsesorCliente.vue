@@ -79,7 +79,10 @@
 
                     <label>Forma de Pago:</label>
                     <select v-model="credito.forma_pago" required>
-                        <option value="Diaria">Diaria</option>
+                        <option value="Diario">Diaria</option>
+                        <option value="Semanal">Semanal</option>
+                        <option value="Quincenal">Quincenal</option>
+                        <option value="Mensual">Mensual</option>
                     </select>
 
                     <label>Fecha de Finalización:</label>
@@ -260,6 +263,12 @@ import { crearClientes, listarClientesConPrestamosAsesor } from '@/services/clie
 import { crearPrestamos } from '@/services/prestamos'
 import alertify from 'alertifyjs'
 import 'alertifyjs/build/css/alertify.css'
+import moment from "moment-timezone"
+
+
+const obtenerFechaLocal = () => {
+    return moment().tz("America/Bogota").format("YYYY-MM-DD")
+}
 
 
 
@@ -325,19 +334,17 @@ const archivos = ref({
 // Función para guardar cliente
 const guardarCliente = async () => {
     try {
-        //console.log("Datos enviados al backend:", cliente.value);
-        cliente.value.id_asesor = usuarioLogueado.value?.id;
-        const guardar = await crearClientes(cliente.value)
-        //console.log('Cliente registrado:', cliente.value)
+        // Asigna automáticamente el asesor logueado
+        cliente.value.id_asesor = usuarioLogueado.value?.id
 
-        // ✅ La alerta de éxito ahora contiene la lógica para cerrar el modal
+        await crearClientes(cliente.value)
+
         alertify.alert(
             'Cliente registrado con éxito',
-            function () {
-                // ✅ Esta función se ejecuta SÓLO cuando el usuario hace clic en 'OK'.
-                // Aquí cerramos el modal principal, limpiamos el formulario y recargamos los datos.
-                mostrarCliente.value = false;
-                limpiarFormulario();
+            async function () {
+                mostrarCliente.value = false
+                limpiarFormulario()
+                await cargarClientes()  // 👈 refresco asegurado
             }
         ).set({
             transition: 'fade',
@@ -345,9 +352,10 @@ const guardarCliente = async () => {
             resizable: false,
             pinnable: false,
             closable: true,
-        });
+        })
     } catch (error) {
-        console.error(error);
+        console.error("Error al registrar cliente:", error)
+        alertify.error("No se pudo registrar el cliente")
     }
 }
 
@@ -367,19 +375,12 @@ const limpiarFormulario = () => {
 };
 
 
-const obtenerFechaActual = () => {
-    const hoy = new Date()
-    const year = hoy.getFullYear()
-    const month = String(hoy.getMonth() + 1).padStart(2, '0')
-    const day = String(hoy.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-}
 
 // Creacion Prestamo
 const credito = ref({
     documento_cliente: '',
     valor_prestamo: null,
-    fecha_solicitud: obtenerFechaActual(),
+    fecha_solicitud: obtenerFechaLocal(),
     numero_cuotas: null,
     valor_diario: null,
     total: null,
@@ -394,7 +395,7 @@ const resetearFormularioCredito = () => {
     credito.value = {
         documento_cliente: '',
         valor_prestamo: null,
-        fecha_solicitud: obtenerFechaActual(),
+        fecha_solicitud: obtenerFechaLocal(),
         numero_cuotas: null,
         valor_diario: null,
         total: null,
@@ -408,32 +409,46 @@ const resetearFormularioCredito = () => {
 
 //watch para calcular valores del credito 
 
-watch([() => credito.value.valor_prestamo, () => credito.value.numero_cuotas], () => {
-    const prestamo = parseFloat(credito.value.valor_prestamo)
-    const cuotas = parseInt(credito.value.numero_cuotas)
+watch(
+    [() => credito.value.valor_prestamo, () => credito.value.numero_cuotas, () => credito.value.forma_pago],
+    () => {
+        const prestamo = parseFloat(credito.value.valor_prestamo)
+        const cuotas = parseInt(credito.value.numero_cuotas)
+        const formaPago = credito.value.forma_pago
 
-    if (!isNaN(prestamo) && !isNaN(cuotas) && cuotas > 0 && Number.isInteger(cuotas)) {
-        const totalConInteres = prestamo * 1.2
-        credito.value.total = totalConInteres.toFixed(2)
-        credito.value.valor_diario = (totalConInteres / cuotas).toFixed(2)
+        if (!isNaN(prestamo) && !isNaN(cuotas) && cuotas > 0) {
+            const totalConInteres = prestamo * 1.2
+            credito.value.total = totalConInteres.toFixed(2)
+            credito.value.valor_diario = (totalConInteres / cuotas).toFixed(2)
 
-        const hoy = new Date()
-        hoy.setMinutes(hoy.getMinutes() - hoy.getTimezoneOffset())
-        const fechaLocal = new Date(hoy)
-        fechaLocal.setDate(fechaLocal.getDate()) // Comienza un día después
-        let dias = cuotas
-        while (dias > 0) {
-            fechaLocal.setDate(fechaLocal.getDate() + 1)
-            const dia = fechaLocal.getDay()
-            if (dia !== 0) dias-- // Ignora domingos
+            // 👉 Fecha base (hoy en zona horaria correcta)
+            let fecha = moment(obtenerFechaLocal(), "YYYY-MM-DD")
+
+            let incremento = 1
+            switch (formaPago) {
+                case "Diaria": incremento = 1; break
+                case "Semanal": incremento = 7; break
+                case "Quincenal": incremento = 15; break
+                case "Mensual": incremento = 30; break
+            }
+
+            // 👉 Iteramos para calcular la fecha final, excluyendo domingos
+            for (let i = 0; i < cuotas; i++) {
+                fecha.add(incremento, "days")
+                if (fecha.day() === 0) {
+                    // Si cae domingo, lo movemos al lunes
+                    fecha.add(1, "days")
+                }
+            }
+
+            credito.value.fecha_finalizacion = fecha.format("YYYY-MM-DD")
+        } else {
+            credito.value.total = ""
+            credito.value.valor_diario = ""
+            credito.value.fecha_finalizacion = ""
         }
-        credito.value.fecha_finalizacion = fechaLocal.toISOString().substring(0, 10)
-    } else {
-        credito.value.total = ""
-        credito.value.valor_diario = ""
-        credito.value.fecha_finalizacion = ""
     }
-})
+)
 
 watch(() => credito.value.numero_cuotas, (nuevoValor) => {
     if (nuevoValor && (nuevoValor < 1 || !Number.isInteger(Number(nuevoValor)))) {
@@ -480,23 +495,18 @@ const guardarCredito = async () => {
         console.log('Datos a enviar:', datosPrestamo)
         await crearPrestamos(datosPrestamo)
 
-
         alertify.alert(
             'Préstamo registrado con éxito',
             `
-    <strong>Cliente:</strong> ${datosPrestamo.documento_cliente}<br>
-    <strong>Valor:</strong> ${credito.value.valor_prestamo}<br>
-    <strong>Cuotas:</strong> ${datosPrestamo.numero_cuotas}<br>
-    <strong>Forma de pago:</strong> ${datosPrestamo.forma_pago}
-  `,
-            function () {
+      <strong>Cliente:</strong> ${datosPrestamo.documento_cliente}<br>
+      <strong>Valor:</strong> ${credito.value.valor_prestamo}<br>
+      <strong>Cuotas:</strong> ${datosPrestamo.numero_cuotas}<br>
+      <strong>Forma de pago:</strong> ${datosPrestamo.forma_pago}
+      `,
+            async function () {
                 mostrarCredito.value = false
                 resetearFormularioCredito()
-                CreditoCliente.value.push({
-                    id_cliente: datosPrestamo.documento_cliente,
-                    nombre: 'Cliente ' + datosPrestamo.documento_cliente,
-                    numero_cuotas: datosPrestamo.numero_cuotas
-                })
+                await cargarClientes()   // 👈 fuerza refresco desde backend
             }
         ).set({ transition: 'fade', movable: false })
     } catch (error) {

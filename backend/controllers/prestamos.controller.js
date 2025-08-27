@@ -1,6 +1,9 @@
 const db = require("../config/db");
 const { crearPrestamo } = require("../models/prestamos.models");
 const { obtenerCajaPorUsuarioYFecha } = require("../models/caja.models");
+const { fechaHoy } = require("../utils/fechas.js");
+const moment = require("moment-timezone");
+
 
 async function registrarPrestamos(req, res) {
   const conn = await db.getConnection();
@@ -16,12 +19,10 @@ async function registrarPrestamos(req, res) {
       !nuevoPrestamo.numero_cuotas ||
       !nuevoPrestamo.creado_por
     ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Faltan campos obligatorios: documento_cliente, valor_prestamo, forma_pago, numero_cuotas, creado_por",
-        });
+      return res.status(400).json({
+        message:
+          "Faltan campos obligatorios: documento_cliente, valor_prestamo, forma_pago, numero_cuotas, creado_por",
+      });
     }
 
     // ==================== FUNCIONES DE CÁLCULO ====================
@@ -38,58 +39,95 @@ async function registrarPrestamos(req, res) {
         throw new Error("El número de cuotas debe ser un entero positivo");
       }
 
-      const interes = Number((valorPrestamo * 0.2).toFixed(2));
+      const interes = Number((valorPrestamo * 0.2).toFixed(2)); // 20%
       const total = Number((valorPrestamo + interes).toFixed(2));
-      const valorDiario = Number((total / numeroCuotas).toFixed(2));
+      const valorCuota = Number((total / numeroCuotas).toFixed(2));
 
-      return { interes, total, valorDiario };
+      return { interes, total, valorCuota };
     }
 
-    // Calcular fecha de finalización (lunes a sábado, excluyendo domingos)
-    function calcularFechaFinalizacion(fechaInicio, numeroCuotas) {
-    if (!(fechaInicio instanceof Date)) {
-      throw new Error("La fecha de inicio debe ser un objeto Date válido");
-    }
-    if (
-      typeof numeroCuotas !== "number" ||
-      numeroCuotas <= 0 ||
-      !Number.isInteger(numeroCuotas)
+    // Calcular fecha de finalización según forma de pago
+    function calcularFechaFinalizacion(
+      fechaInicioStr,
+      numeroCuotas,
+      formaPago
     ) {
-      throw new Error("El número de cuotas debe ser un entero positivo");
-    }
-
-    let fechaActual = new Date(fechaInicio);
-    fechaActual.setDate(fechaActual.getDate() + 1); // empieza a contar desde mañana
-    let diasAgregados = 0;
-
-    while (diasAgregados < numeroCuotas) {
-      const diaSemana = fechaActual.getDay();
-
-      if (diaSemana !== 0) {
-        // si NO es domingo, cuenta como cuota
-        diasAgregados++;
+      if (!fechaInicioStr || typeof fechaInicioStr !== "string") {
+        throw new Error("La fecha de inicio debe ser un string YYYY-MM-DD");
       }
 
-      if (diasAgregados < numeroCuotas) {
-        // avanzar un día solo si aún faltan cuotas
-        fechaActual.setDate(fechaActual.getDate() + 1);
+      let fecha = moment.tz(fechaInicioStr, "YYYY-MM-DD", "America/Bogota");
+      if (!fecha.isValid()) {
+        throw new Error("fechaInicio no es válida");
       }
-    }
 
-    return fechaActual.toISOString().split("T")[0];
+      switch (formaPago) {
+        case "Diario": {
+          let cobradas = 0;
+          while (cobradas < numeroCuotas) {
+            fecha = fecha.add(1, "day");
+            if (fecha.day() !== 0) {
+              // 0 = domingo
+              cobradas++;
+            }
+          }
+          break;
+        }
+
+        case "Semanal": {
+          for (let i = 0; i < numeroCuotas; i++) {
+            fecha = fecha.add(7, "day");
+            if (fecha.day() === 0) {
+              fecha = fecha.add(1, "day"); // mover al lunes
+            }
+          }
+          break;
+        }
+
+        case "Quincenal": {
+          for (let i = 0; i < numeroCuotas; i++) {
+            fecha = fecha.add(15, "day");
+            if (fecha.day() === 0) {
+              fecha = fecha.add(1, "day");
+            }
+          }
+          break;
+        }
+
+        case "Mensual": {
+          for (let i = 0; i < numeroCuotas; i++) {
+            fecha = fecha.add(1, "month");
+            if (fecha.day() === 0) {
+              fecha = fecha.add(1, "day");
+            }
+          }
+          break;
+        }
+
+        default:
+          throw new Error(`Forma de pago no soportada: ${formaPago}`);
+      }
+
+      // Seguridad: nunca devolver domingo
+      if (fecha.day() === 0) {
+        fecha = fecha.add(1, "day");
+      }
+
+      return fecha.format("YYYY-MM-DD");
     }
 
     // Calcular valores del préstamo
-    const { interes, total, valorDiario } = calcularValoresPrestamo(
+    const { interes, total, valorCuota } = calcularValoresPrestamo(
       nuevoPrestamo.valor_prestamo,
       nuevoPrestamo.numero_cuotas
     );
 
-    // Calcular fecha_finalizacion
-    const hoy = new Date().toISOString().split("T")[0];
+    const hoy = fechaHoy(); // fecha de creación con zona horaria Bogotá
+
     const fechaFinalizacion = calcularFechaFinalizacion(
-      new Date(hoy),
-      nuevoPrestamo.numero_cuotas
+      hoy,
+      nuevoPrestamo.numero_cuotas,
+      nuevoPrestamo.forma_pago
     );
 
     // ==================== LÓGICA PRINCIPAL ====================
@@ -157,21 +195,21 @@ async function registrarPrestamos(req, res) {
       });
     }
 
-    
     //Validar Estado del Prestamo
     const [prestamoActivo] = await conn.query(
-    `SELECT id_prestamo 
+      `SELECT id_prestamo 
     FROM prestamos_clientes 
     WHERE documento_cliente = ? AND estado = 'Activo'
     LIMIT 1`,
-    [nuevoPrestamo.documento_cliente]
+      [nuevoPrestamo.documento_cliente]
     );
 
     if (prestamoActivo[0]) {
       await conn.rollback();
       return res.status(400).json({
         error: "PRESTAMO_ACTIVO",
-        message: "El cliente ya tiene un préstamo activo y no puede solicitar otro hasta liquidarlo o cancelarlo",
+        message:
+          "El cliente ya tiene un préstamo activo y no puede solicitar otro hasta liquidarlo o cancelarlo",
       });
     }
 
@@ -183,7 +221,7 @@ async function registrarPrestamos(req, res) {
       fecha_inicio: hoy,
       interes,
       total,
-      valor_diario: valorDiario,
+      valor_diario: valorCuota,
       fecha_finalizacion: fechaFinalizacion,
     };
 
@@ -206,7 +244,7 @@ async function registrarPrestamos(req, res) {
       calculos: {
         interes,
         total,
-        valor_diario: valorDiario,
+        valor_diario: valorCuota,
         fecha_finalizacion: fechaFinalizacion,
       },
     });
