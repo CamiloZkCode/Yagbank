@@ -1,12 +1,46 @@
 <template>
     <div>
+        <!-- Modal Pago Cuota -->
+        <div v-if="pagoCuota" class="modal-overlay">
+            <div class="modal-content">
+                <span class="material-symbols-outlined close-icon"
+                    @click="pagoCuota = false; limpiarFormulario()">close</span>
+                <h2>Pago Cuota - {{ clienteSeleccionado?.nombre }}</h2>
+                <form @submit.prevent="guardarPago" enctype="multipart/form-data">
+                    <div class="opciones-pago">
+                        <label>
+                            <input type="radio" value="abono" v-model="tipoPago" required />
+                            Pagar Cuota
+                        </label>
+                        <label>
+                            <input type="radio" value="liquidar" v-model="tipoPago" />
+                            Liquidar Crédito
+                        </label>
+                    </div>
+
+                    <!-- Pagar una cuota -->
+                    <div v-if="tipoPago === 'abono'">
+                        <label for="montoCuota">Valor a Pagar:</label>
+                        <input type="number" id="montoCuota" v-model="montoAbono" required min="1"
+                            :max="clienteSeleccionado?.saldo_restante" class="valor" />
+                    </div>
+
+                    <!-- Liquidar crédito -->
+                    <div v-if="tipoPago === 'liquidar'">
+                        <label for="montoLiquidar">Total a liquidar:</label>
+                        <input type="number" id="montoLiquidar" :value="clienteSeleccionado?.saldo_restante" readonly
+                            class="valor" />
+                    </div>
+                    <button type="submit">Guardar Pago</button>
+                </form>
+            </div>
+        </div>
+
         <!-- Tabla -->
         <div class="contenedor-tabla">
-
-
             <div class="filtros">
                 <div class="filtro-nombre">
-                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" v-model="filtroNombre" />
+                    <input class="filtro-nom" type="text" placeholder="Búsqueda por nombre" v-model="filtroNombre" />
                     <span class="material-symbols-outlined">search</span>
                 </div>
             </div>
@@ -20,85 +54,84 @@
                             <th class="columna-nota">Nota</th>
                             <th>Abono</th>
                             <th>Saldo</th>
-                            <th></th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <template v-for="Clientes in ClienteFiltro" :key="Clientes.id_cliente">
+                        <template v-for="cliente in ClienteFiltro" :key="cliente.id_prestamo">
                             <tr>
                                 <td class="columna-min">
-                                    <div class="estado" @click="toggleExpand(Clientes.id_cliente)">
-                        
-                                        {{ Clientes.cuotas_pagadas }}
+                                    <div class="estado" :style="{ background: getEstadoColor(cliente.cuotas_mora) }"
+                                        @click="toggleExpand(cliente.id_prestamo)">
+                                        {{ cliente.cuotas_pagadas }}
                                     </div>
                                 </td>
-                                <td>{{ Clientes.nombre }}</td>
-                                <td>
-                                    <span class="material-symbols-outlined up" >
-                                        arrow_warm_up
-                                    </span>
-
-                                    <span class="material-symbols-outlined block">
-                                        block
-                                    </span>
-                                    <span class="material-symbols-outlined down">
-                                        arrow_cool_down
-                                    </span>
+                                <td>{{ cliente.nombre }} {{ cliente.referencia }}</td>
+                                <td class="columna-nota">
+                                    <!-- Admin sees all nota options -->
+                                    <template v-if="role === 1">
+                                        <span class="material-symbols-outlined up"
+                                            :class="{ active: cliente.nota_credito === 'up' }"
+                                            @click="marcarClienteNota(cliente.id_cliente, 'up')">
+                                            arrow_warm_up
+                                        </span>
+                                        <span class="material-symbols-outlined down"
+                                            :class="{ active: cliente.nota_credito === 'down' }"
+                                            @click="marcarClienteNota(cliente.id_cliente, 'down')">
+                                            arrow_cool_down
+                                        </span>
+                                        <span class="material-symbols-outlined block"
+                                            @click="marcarClienteClavo(cliente.id_cliente)">
+                                            block
+                                        </span>
+                                    </template>
+                                    <!-- Supervisor sees only the active nota -->
+                                    <template v-else-if="role === 2 && cliente.nota_credito">
+                                        <span class="material-symbols-outlined" :class="{
+                                            up: cliente.nota_credito === 'up',
+                                            down: cliente.nota_credito === 'down'
+                                        }">
+                                            {{ cliente.nota_credito === 'up' ? 'arrow_warm_up' : 'arrow_cool_down' }}
+                                        </span>
+                                    </template>
                                 </td>
                                 <td>
                                     <div class="contenedor-pagos">
-                                        ${{ Clientes.abono }}
-                                        <button @click="abrirModalPago(Clientes)">Pagar</button>
+                                        ${{ cliente.abono || 0 }}
+                                        <button @click="abrirModalPago(cliente)">Pagar</button>
                                     </div>
-
                                 </td>
                                 <td>
                                     <div class="contenedor-deuda">
-                                        ${{ Clientes.prestamo_total - Clientes.abono_total }}
-                                        <label> ${{ Clientes.abono_total }}</label>
+                                        ${{ cliente.saldo_restante }}
+                                        <label>$ {{ cliente.abono_capital }}</label>
                                     </div>
-
                                 </td>
-
                             </tr>
-                            <tr v-if="usuarioExpandido === Clientes.id_cliente">
-                                <td colspan="7" class="fila-expandida">
+                            <tr v-if="usuarioExpandido === cliente.id_prestamo">
+                                <td colspan="5" class="fila-expandida">
                                     <div class="info-extra">
-                                        <strong>Dirección:</strong> {{ Clientes.direccion }} &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Teléfono:</strong> {{ Clientes.telefono }}
+                                        <strong>Dirección:</strong> {{ cliente.direccion }} &nbsp;&nbsp;|&nbsp;&nbsp;
+                                        <strong>Teléfono:</strong> {{ cliente.telefono }}
                                     </div>
-
                                     <div class="info-extra">
-                                        <strong>Credito:</strong> ${{ Clientes.prestamo_total }}
+                                        <strong>Crédito:</strong> ${{ cliente.prestamo_total }}
                                         &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Numero Cuotas:</strong> {{ Clientes.numero_cuotas }}
+                                        <strong>Número Cuotas:</strong> {{ cliente.numero_cuotas }}
                                     </div>
-
                                     <div class="info-extra">
-                                        <strong>Solicitud Credito:</strong> {{ Clientes.fecha_prestamo }}
+                                        <strong>Solicitud Crédito:</strong> {{ formatDate(cliente.fecha_prestamo) }}
                                         &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Fecha Finalización</strong> {{ Clientes.fecha_finalizacion }}
+                                        <strong>Fecha Finalización:</strong> {{ formatDate(cliente.fecha_finalizacion)
+                                        }}
                                     </div>
-
                                     <div class="info-extra">
                                         <h3>Cuotas</h3>
                                         <div class="calendario-cuotas">
                                             <div class="grid-cuotas">
-                                                <div v-for="n in generarCuotasPorCliente(Clientes.numero_cuotas)"
-                                                    :key="n" class="cuota">
-                                                    {{ n }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="info-extra">
-                                        <h3>Historial</h3>
-                                        <div class="calendario-cuotas">
-                                            <div class="grid-cuotas">
-                                                <div>
-
+                                                <div v-for="cuota in generarCuotasPorCliente(cliente.id_prestamo, cliente.numero_cuotas)"
+                                                    :key="cuota.numero" class="cuota"
+                                                    :style="{ background: getCuotaColor(cuota, cliente) }">
+                                                    {{ cuota.numero }}
                                                 </div>
                                             </div>
                                         </div>
@@ -111,64 +144,284 @@
             </div>
 
             <div class="contador-tarjetas">
-                <h4 class="tarjetas-cobradas">T.Cobradas: <span id="tarjeta">0</span></h4>
-                <h4 class="valor-cobrado">V.Recaudado: <span id="cobro">$0</span></h4>
+                <h4 class="tarjetas-cobradas">T. Cobradas: <span id="tarjeta">{{ contadores.tarjetas_cobradas }}</span>
+                </h4>
+                <h4 class="valor-cobrado">V. Recaudado: <span id="cobro">$ {{ contadores.valor_recaudado }}</span></h4>
             </div>
-
         </div>
     </div>
 </template>
 
-
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { obtenerDatosPagos, realizarPago, obtenerCuotasPrestamo, marcarClavo, marcarNota } from '@/services/pago'
+import moment from 'moment-timezone'
+
+// Date utility functions
+const obtenerFechaLocal = () => {
+    return moment().tz("America/Bogota").format("YYYY-MM-DD")
+}
+const formatDate = (dateString) => {
+    if (!dateString) return ''
+    return new Date(dateString).toLocaleDateString('es-ES')
+}
 
 const authStore = useAuthStore()
-const usuarioLogueado = computed(() => authStore.user)
+const role = computed(() => authStore.user.id_rol) // Role: 1 (Admin), 2 (Supervisor), 3 (Advisor)
 
-
-// Expansión de tabla
+const pagoCuota = ref(false)
+const clienteSeleccionado = ref(null)
+const tipoPago = ref("")
+const montoAbono = ref(0)
+const montoLiquidar = ref(0)
 const usuarioExpandido = ref(null)
-const toggleExpand = (id) => {
-    usuarioExpandido.value = usuarioExpandido.value === id ? null : id
-}
-
-
-// Datos de prueba
-const CreditoCliente = ref([
-    { id_cliente: 1001, nombre: 'María Gómez', telefono: '3123456789', direccion: 'Calle 10 #15-20', casa: 'Casa 1', numero_cuotas: 20, cuotas_pagadas: 5, cuotas_deberia: 8, abono: 100, abono_total: 500, prestamo_total: 1200, fecha_prestamo: '2025-06-15', fecha_finalizacion: '2025-11-30' },
-    { id_cliente: 1002, nombre: 'Luis Martínez', telefono: '3132223344', direccion: 'Carrera 8 #45-12', casa: 'Casa 2', numero_cuotas: 24, cuotas_pagadas: 10, cuotas_deberia: 12, abono: 150, abono_total: 300, prestamo_total: 1500, fecha_prestamo: '2025-05-01', fecha_finalizacion: '2025-10-20' },
-    { id_cliente: 1003, nombre: 'Ana Torres', telefono: '3149998877', direccion: 'Diagonal 3 #21-18', casa: 'Casa 3', numero_cuotas: 18, cuotas_pagadas: 18, cuotas_deberia: 18, abono: 120, abono_total: 240, prestamo_total: 1000, fecha_prestamo: '2025-02-10', fecha_finalizacion: '2025-07-10' },
-    { id_cliente: 1004, nombre: 'Jorge Herrera', telefono: '3118887766', direccion: 'Av. Siempre Viva #123', casa: 'Casa 4', numero_cuotas: 12, cuotas_pagadas: 3, cuotas_deberia: 6, abono: 90, abono_total: 270, prestamo_total: 600, fecha_prestamo: '2025-07-01', fecha_finalizacion: '2025-12-15' },
-    { id_cliente: 1005, nombre: 'María Gómez', telefono: '3123456789', direccion: 'Calle 10 #15-20', casa: 'Casa 1', numero_cuotas: 20, cuotas_pagadas: 5, cuotas_deberia: 8, abono: 100, abono_total: 500, prestamo_total: 1200, fecha_prestamo: '2025-06-15', fecha_finalizacion: '2025-11-30' },
-    { id_cliente: 1006, nombre: 'Luis Martínez', telefono: '3132223344', direccion: 'Carrera 8 #45-12', casa: 'Casa 2', numero_cuotas: 24, cuotas_pagadas: 10, cuotas_deberia: 12, abono: 150, abono_total: 300, prestamo_total: 1500, fecha_prestamo: '2025-05-01', fecha_finalizacion: '2025-10-20' },
-    { id_cliente: 1007, nombre: 'Ana Torres', telefono: '3149998877', direccion: 'Diagonal 3 #21-18', casa: 'Casa 3', numero_cuotas: 18, cuotas_pagadas: 18, cuotas_deberia: 18, abono: 120, abono_total: 240, prestamo_total: 1000, fecha_prestamo: '2025-02-10', fecha_finalizacion: '2025-07-10' },
-    { id_cliente: 1008, nombre: 'Jorge Herrera', telefono: '3118887766', direccion: 'Av. Siempre Viva #123', casa: 'Casa 4', numero_cuotas: 12, cuotas_pagadas: 3, cuotas_deberia: 6, abono: 90, abono_total: 270, prestamo_total: 600, fecha_prestamo: '2025-07-01', fecha_finalizacion: '2025-12-15' }
-
-
-
-])
-
-// Generador de espacio de cuotas
-const generarCuotasPorCliente = (cuotas) => {
-    const num = parseInt(cuotas) || 0
-    return Array.from({ length: num }, (_, i) => i + 1)
-}
-
-
-//Filtro Nombre
 const filtroNombre = ref('')
+const CreditoCliente = ref([])
+const contadores = ref({ tarjetas_cobradas: 0, valor_recaudado: 0 })
+const today = obtenerFechaLocal() // Use moment for current date
+
+// Fetch data on component mount
+const fetchData = async () => {
+    try {
+        const response = await obtenerDatosPagos()
+        CreditoCliente.value = response.clientes.map(cliente => ({
+            ...cliente,
+            valor_cuota: cliente.prestamo_total / cliente.numero_cuotas,
+            referencia: cliente.referencia || '' // Show empty string if null
+        }))
+        contadores.value = response.contadores
+    } catch (error) {
+        console.error('Error fetching payment data:', error)
+    }
+}
+
+// Fetch cuotas for a specific loan
+const cuotasPrestamo = ref({})
+const fetchCuotas = async (idPrestamo) => {
+    try {
+        const cuotas = await obtenerCuotasPrestamo(idPrestamo)
+        cuotasPrestamo.value[idPrestamo] = cuotas
+    } catch (error) {
+        console.error('Error fetching cuotas:', error)
+    }
+}
+
+// Open payment modal
+const abrirModalPago = (cliente) => {
+    clienteSeleccionado.value = cliente
+    pagoCuota.value = true
+    tipoPago.value = ""
+    montoAbono.value = 0
+    montoLiquidar.value = cliente.saldo_restante
+}
+
+// Save payment
+const guardarPago = async () => {
+    try {
+        const idPrestamo = clienteSeleccionado.value.id_prestamo
+        const valorCuota = clienteSeleccionado.value.valor_cuota
+        const saldoRestante = clienteSeleccionado.value.saldo_restante
+        let tipo = tipoPago.value === 'abono' ? 'cuota' : 'todo'
+
+        // Determinar el tipo de pago basado en el monto ingresado
+        if (tipoPago.value === 'abono' && montoAbono.value >= saldoRestante) {
+            tipo = 'todo'
+        }
+
+        const data = {
+            id_prestamo: idPrestamo,
+            tipo,
+            monto: tipoPago.value === 'abono' ? montoAbono.value : saldoRestante
+        }
+
+        // Validar el monto
+        if (tipoPago.value === 'abono' && (montoAbono.value <= 0 || montoAbono.value > saldoRestante)) {
+            throw new Error('Monto inválido para el pago de la cuota')
+        }
+
+        await realizarPago(data)
+        await fetchCuotas(idPrestamo)
+        await fetchData()
+        pagoCuota.value = false
+        limpiarFormulario()
+    } catch (error) {
+        console.error('Error processing payment:', error)
+        alert('Error al procesar el pago: ' + error.message)
+    }
+}
+
+// Mark client as "clavo"
+const marcarClienteClavo = async (documento_cliente) => {
+    try {
+        await marcarClavo({ documento_cliente })
+        await fetchData()
+    } catch (error) {
+        console.error('Error marking clavo:', error)
+    }
+}
+
+// Mark nota_credito
+const marcarClienteNota = async (documento_cliente, nota_credito) => {
+    try {
+        await marcarNota({ documento_cliente, nota_credito })
+        await fetchData()
+    } catch (error) {
+        console.error('Error marking nota:', error)
+    }
+}
+
+// Clear form
+const limpiarFormulario = () => {
+    tipoPago.value = ""
+    montoAbono.value = 0
+    montoLiquidar.value = 0
+    clienteSeleccionado.value = null
+}
+
+// Toggle expanded row and fetch cuotas
+const toggleExpand = async (id_prestamo) => {
+    if (usuarioExpandido.value === id_prestamo) {
+        usuarioExpandido.value = null
+    } else {
+        usuarioExpandido.value = id_prestamo
+        await fetchCuotas(id_prestamo)
+    }
+}
+
+// Filter clients by name
 const ClienteFiltro = computed(() =>
-    CreditoCliente.value.filter(Clientes =>
-        Clientes.nombre.toLowerCase().includes(filtroNombre.value.toLowerCase())
+    CreditoCliente.value.filter(cliente =>
+        cliente.nombre.toLowerCase().includes(filtroNombre.value.toLowerCase())
     )
 )
 
+// Generate cuotas for display
+const generarCuotasPorCliente = (id_prestamo, numero_cuotas) => {
+    const cuotas = cuotasPrestamo.value[id_prestamo] || []
+    return Array.from({ length: numero_cuotas }, (_, i) => {
+        const cuota = cuotas.find(c => c.numero_cuota === i + 1)
+        return {
+            numero: i + 1,
+            pagada: cuota ? cuota.pagada : false,
+            fecha_pago: cuota ? cuota.fecha_pago : null,
+            fecha_pagada: cuota ? cuota.fecha_pagada : null
+        }
+    })
+}
+
+// Determine background color for N° column based on cuotas_mora
+const getEstadoColor = (cuotas_mora) => {
+    if (cuotas_mora >= 6) return 'var(--color-rojo-5)'
+    if (cuotas_mora >= 4) return 'var(--color-morado-4)'
+    if (cuotas_mora >= 2) return 'var(--color-naranja-3)'
+    if (cuotas_mora === 1) return 'var(--color-amarillo-2)'
+    return 'var(--color-aprobado-1)'
+}
+
+// Determine color for individual cuota
+const getCuotaColor = (cuota, cliente) => {
+    if (cliente.estado === 'Liquidado' || cuota.pagada) {
+        return 'var(--color-aprobado-1)' // Green for paid or liquidated
+    }
+    if (cuota.fecha_pago && cuota.fecha_pago < today) {
+        return 'var(--color-rojo-5)' // Red for overdue
+    }
+    return 'var(--color-blanco)' // White for not yet due
+}
+
+// Load data on mount
+fetchData()
 </script>
 
 
 <style scoped>
+/*=======================Modal Pago Cuota=========================*/
+
+.icono-boton {
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+    cursor: pointer;
+}
+
+.valor {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid var(--color-info-luz);
+    border-radius: 6px;
+}
+
+.opciones-pago {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background: var(--color-background);
+    padding: 2rem;
+    border-radius: var(--card-border-radius);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-content::-webkit-scrollbar {
+    height: 0.5rem;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0.8rem;
+}
+
+input[type="radio"] {
+    appearance: auto;
+    /* fuerza a mostrar el radio nativo */
+    -webkit-appearance: radio;
+    -moz-appearance: radio;
+    accent-color: var(--color-azul-1);
+    /* color personalizado */
+    margin-right: 6px;
+    cursor: pointer;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.close-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 28px;
+    color: var(--color-rojo-5);
+}
+
+.close-icon:hover {
+    color: var(--color-rojo-5);
+}
+
+
 .contenedor-tabla {
     margin-top: 1.0rem;
 }
@@ -286,18 +539,37 @@ table tbody tr:last-child td {
     border: none;
 }
 
-.contenedor-tabla .tabla-clientes .up{
+.active {
+    font-weight: bold;
+    opacity: 1 !important;
+}
+
+.material-symbols-outlined.up,
+.material-symbols-outlined.down,
+.material-symbols-outlined.block {
+    cursor: pointer;
+    opacity: 0.6;
+}
+
+.material-symbols-outlined.up:hover,
+.material-symbols-outlined.down:hover,
+.material-symbols-outlined.block:hover {
+    opacity: 1;
+}
+
+.contenedor-tabla .tabla-clientes .up {
     color: var(--color-aprobado-1);
 }
 
 
-.contenedor-tabla .tabla-clientes .block{
+.contenedor-tabla .tabla-clientes .block {
     color: var(--color-rojo-5);
 }
 
-.contenedor-tabla .tabla-clientes .down{
+.contenedor-tabla .tabla-clientes .down {
     color: var(--color-amarillo-2);
 }
+
 button {
     cursor: pointer;
     border: none;
@@ -312,10 +584,11 @@ button {
 }
 
 
-.contenedor-deuda{
+.contenedor-deuda {
     border: 1px solid var(--color-light);
 }
-.contenedor-deuda label{
+
+.contenedor-deuda label {
     border-top: 1px solid var(--color-light);
 }
 
@@ -416,10 +689,11 @@ button {
         position: relative;
     }
 
-      .contenedor-tabla .tabla-clientes {
+    .contenedor-tabla .tabla-clientes {
         min-width: 120%;
 
     }
+
     .contenedor-tabla table {
         margin-top: 1rem;
         font-size: 1rem;
@@ -435,7 +709,7 @@ button {
     .contenedor-tabla .tabla-clientes td,
     .contenedor-tabla .tabla-clientes th {
         white-space: normal;
-        word-break: break-word; 
+        word-break: break-word;
         text-align: center;
     }
 

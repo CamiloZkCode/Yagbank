@@ -1,9 +1,8 @@
 const db = require("../config/db");
-const { crearPrestamo } = require("../models/prestamos.models");
+const { crearPrestamo, crearCuotas } = require("../models/prestamos.models");
 const { obtenerCajaPorUsuarioYFecha } = require("../models/caja.models");
 const { fechaHoy } = require("../utils/fechas.js");
 const moment = require("moment-timezone");
-
 
 async function registrarPrestamos(req, res) {
   const conn = await db.getConnection();
@@ -226,21 +225,25 @@ async function registrarPrestamos(req, res) {
     };
 
     const idPrestamo = await crearPrestamo(datosPrestamo);
+    const numeroCuotas = Number(nuevoPrestamo.numero_cuotas);
+
+
+    // ===== Crear cuotas automáticamente =====
+    await crearCuotas(
+      idPrestamo,
+      numeroCuotas,
+      hoy,
+      valorCuota,
+      nuevoPrestamo.forma_pago,
+      cajaAsesor.id_caja
+    );
+
     await conn.commit();
 
-    // ==================== RESPUESTA EXITOSA ====================
     return res.status(201).json({
       success: true,
       id_prestamo: idPrestamo,
-      caja: {
-        id: cajaAsesor.id_caja,
-        asesor: idAsesor,
-        fecha: hoy,
-      },
-      warnings:
-        nuevoPrestamo.creado_por !== idAsesor
-          ? `Préstamo vinculado a la caja del asesor (ID: ${idAsesor})`
-          : undefined,
+      caja: { id: cajaAsesor.id_caja, asesor: idAsesor, fecha: hoy },
       calculos: {
         interes,
         total,
@@ -251,13 +254,13 @@ async function registrarPrestamos(req, res) {
   } catch (error) {
     await conn.rollback();
     console.error("Error en registrarPrestamos:", error);
-    return res.status(500).json({
-      error: "SERVER_ERROR",
-      message: "Error interno del servidor",
-    });
+    return res
+      .status(500)
+      .json({ error: "SERVER_ERROR", message: error.message });
   } finally {
     conn.release();
   }
 }
 
 module.exports = { registrarPrestamos };
+

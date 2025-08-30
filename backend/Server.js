@@ -13,8 +13,8 @@ const CajaRoutes = require("./routes/caja.routes");
 const PrestamoFuncionario = require("./routes/funcionariocre.routes");
 const IngresoRoutes = require("./routes/ingresos.routes");
 const GastosRoutes = require("./routes/gastos.routes");
-
-const CajaController = require("./controllers/caja.controller");
+const CajaController = require("./routes/caja.routes");
+const PagosController = require("./routes/pagos.routes");
 
 const app = express();
 app.use(cors());
@@ -28,6 +28,7 @@ app.use("/api/caja", CajaRoutes);
 app.use("/api/funcionario", PrestamoFuncionario);
 app.use("/api/ingresos", IngresoRoutes);
 app.use("/api/gastos", GastosRoutes);
+app.use("/api/pagos", PagosController);
 
 // Programar cierre automático de cajas a medianoche (America/Bogota)
 cron.schedule(
