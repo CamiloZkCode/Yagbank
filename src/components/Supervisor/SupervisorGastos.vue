@@ -78,11 +78,11 @@
                     <tbody>
                         <tr v-for="gasto in gastosFiltrados" :key="gasto.id_gasto">
                             <td>{{ formatDate(gasto.fecha) }}</td>
-                            <td>{{ gasto.nombre }}</td>
+                            <td class="gasto">{{ gasto.nombre }}</td>
                             <td>${{ gasto.valor }}</td>
                             <td>{{ gasto.descripcion }}</td>
                         </tr>
-                         <tr v-if="gastosFiltrados.length === 0">
+                        <tr v-if="gastosFiltrados.length === 0">
                             <td colspan="6">No hay gastos registrados.</td>
                         </tr>
                     </tbody>
@@ -367,7 +367,7 @@ textarea {
     border-radius: 0.8rem;
 }
 
-.contenedor-tabla .tabla-ingresos {
+.contenedor-tabla .tabla-gastos {
     width: auto;
     min-width: 100%;
     border-collapse: collapse;
@@ -472,22 +472,27 @@ table tbody tr:last-child td {
         position: relative;
     }
 
-    .contenedor-tabla .tabla-ingresos {
-        min-width: 190%;
+    .contenedor-tabla .tabla-gastos {
+        min-width: 125%;
     }
+
+    .contenedor-tabla .tabla-gastos .gasto {
+        width: 120px;
+        white-space: normal;
+        word-break: break-word;
+    }
+
 
     .contenedor-tabla table {
         width: 100%;
         margin-top: 1rem;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
-    .contenedor-tabla .tabla-ingresos td,
+    .contenedor-tabla .tabla-gastos td,
     th {
         padding: 0rem 1rem;
     }
-
-
 
 
 }

@@ -317,7 +317,12 @@ const guardarUsuario = async () => {
 
         const respuesta = await registrarUsuario(usuario.value);
 
-        // ✅ La alerta de éxito ahora contiene la lógica para cerrar el modal
+        // 🔹 Si se creó un supervisor, recargo inmediatamente la lista
+        if (usuario.value.id_rol == 2) {
+            await cargarSupervisores();
+        }
+
+        // ✅ La alerta de éxito ahora solo informa
         alertify.alert(
             'Usuario registrado con éxito',
             `
@@ -326,15 +331,10 @@ const guardarUsuario = async () => {
                 <strong>Contraseña temporal:</strong> ${respuesta.datos.contraseña_temporal}
                 </div>
             `,
-            function () {
-                // ✅ Esta función se ejecuta SÓLO cuando el usuario hace clic en 'OK'.
-                // Aquí cerramos el modal principal, limpiamos el formulario y recargamos los datos.
+            async function () {
                 mostrarUsuario.value = false;
                 limpiarFormulario();
-                cargarUsuariosDelAdministrador();
-                if (usuario.value.id_rol == 2) {
-                    cargarSupervisores();
-                }
+                await cargarUsuariosDelAdministrador();
             }
         ).set({
             transition: 'fade',

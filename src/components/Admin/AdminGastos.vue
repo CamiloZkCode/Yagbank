@@ -27,7 +27,7 @@
                         <template v-for="gasto in gastosFiltrados" :key="gasto.id_gasto">
                             <tr>
                                 <td>{{ formatDate(gasto.fecha) }}</td>
-                                <td>{{ gasto.usuario }}</td>
+                                <td class="gasto">{{ gasto.usuario }}</td>
                                 <td>{{ gasto.cargo }}</td>
                                 <td>{{ gasto.tipo_gasto }}</td>
                                 <td>${{ gasto.valor }}</td>
@@ -327,14 +327,20 @@ table tbody tr:last-child td {
         position: relative;
     }
 
+    .contenedor-tabla .tabla-gastos .gasto {
+        width: 120px;
+        white-space: normal;
+        word-break: break-word;
+    }
+
     .contenedor-tabla .tabla-gastos {
-        min-width: 190%;
+        min-width: 130%;
     }
 
     .contenedor-tabla table {
         width: 100%;
         margin-top: 1rem;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .contenedor-tabla .tabla-gastos td,

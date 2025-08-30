@@ -33,7 +33,7 @@
             </div>
 
             <div class="tabla-scrollable">
-                <table class="tabla-clientes">
+                <table class="tabla-funcionarios">
                     <thead>
                         <tr>
                             <th class="columna-min">Fecha</th>
@@ -320,7 +320,7 @@ input[type="number"]::-webkit-inner-spin-button {
     border-radius: 0.8rem;
 }
 
-.contenedor-tabla .tabla-clientes {
+.contenedor-tabla .tabla-funcionarios {
     width: auto;
     min-width: 100%;
     border-collapse: collapse;
@@ -348,7 +348,7 @@ table tbody td {
 }
 
 
-.contenedor-tabla .tabla-clientes .estado {
+.contenedor-tabla .tabla-funcionarios .estado {
     background: var(--color-aprobado-1);
     color: var(--color-blanco);
     border-radius: var(--card-border-radius);
@@ -466,17 +466,17 @@ table tbody tr:last-child td {
         position: relative;
     }
 
-    .contenedor-tabla .tabla-clientes {
-        min-width: 170%;
+    .contenedor-tabla .tabla-funcionarios {
+        min-width: 160%;
     }
 
     .contenedor-tabla table {
         width: 100%;
         margin-top: 1rem;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
-    .contenedor-tabla .tabla-clientes td,
+    .contenedor-tabla .tabla-funcionarios td,
     th {
         word-wrap: break-word;
         white-space: normal;

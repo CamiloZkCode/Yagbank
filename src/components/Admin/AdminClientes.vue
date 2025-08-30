@@ -176,9 +176,10 @@
                     <tbody>
                         <template v-for="cliente in clientesFiltrados" :key="cliente.documento_cliente">
                             <tr>
-                                <td>{{ cliente.nombre }} {{ cliente.apellido }} {{ cliente.referencia }}</td>
-                                <td>{{ cliente.nombre_supervisor || 'N/A' }}</td>
-                                <td>{{ cliente.nombre_asesor }}</td>
+                                <td class="nombre">{{ cliente.nombre }} {{ cliente.apellido }} {{ cliente.referencia }}
+                                </td>
+                                <td class="nombre">{{ cliente.nombre_supervisor || 'N/A' }}</td>
+                                <td class="nombre">{{ cliente.nombre_asesor }}</td>
                                 <td>
                                     <span
                                         :class="['estado-badge', cliente.cliente_activo == 1 ? 'activo' : 'inactivo']">
@@ -825,6 +826,8 @@ input[type="number"]::-webkit-inner-spin-button {
     border-collapse: collapse;
 }
 
+
+
 .contenedor-tabla table {
     text-align: center;
     transition: all 300ms ease;
@@ -835,7 +838,6 @@ input[type="number"]::-webkit-inner-spin-button {
     box-shadow: none;
     background: transparent;
 }
-
 
 .contenedor-tabla .tabla-scrollable:hover {
     box-shadow: none;
@@ -970,7 +972,21 @@ table tbody tr:last-child td {
     }
 
     .contenedor-tabla .tabla-clientes {
-        min-width: 160%;
+        min-width: 150%;
+    }
+
+    .contenedor-tabla .tabla-clientes .nombre {
+        width: 140px;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    table td:nth-child(5),
+    table th:nth-child(5),
+     table td:nth-child(4),
+    table th:nth-child(4)  {
+        padding-left: 1rem;
+        /* o más según quieras */
     }
 
     .icono-boton {
@@ -984,6 +1000,7 @@ table tbody tr:last-child td {
         width: 100%;
         margin-top: 1rem;
         font-size: 1rem;
+
     }
 
     .contenedor-tabla .tabla-clientes td,

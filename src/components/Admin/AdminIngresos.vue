@@ -76,7 +76,7 @@
                         <tr v-for="ing in ingresosFiltrados" :key="ing.id">
                             <td>{{ formatDate(ing.fecha) }}</td>
                             <td>{{ ing.asesor }}</td>
-                            <td>{{ ing.tipo }}</td>
+                            <td class="ingreso">{{ ing.tipo }}</td>
                             <td>${{ ing.monto }}</td>
                             <td>{{ ing.descripcion }}</td>
                         </tr>
@@ -531,13 +531,14 @@ table tbody tr:last-child td {
     }
 
     .contenedor-tabla .tabla-ingresos {
-        min-width: 190%;
+        min-width: 120%;
     }
+
 
     .contenedor-tabla table {
         width: 100%;
         margin-top: 1rem;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .contenedor-tabla .tabla-ingresos td,

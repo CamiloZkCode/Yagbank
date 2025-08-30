@@ -49,9 +49,9 @@
                 <table class="tabla-clientes">
                     <thead>
                         <tr>
-                            <th class="columna-min">N°</th>
+                            <th>N°</th>
                             <th>Cliente</th>
-                            <th class="columna-nota">Nota</th>
+                            <th>Nota</th>
                             <th>Abono</th>
                             <th>Saldo</th>
                         </tr>
@@ -64,8 +64,8 @@
                                         @click="toggleExpand(cliente.id_prestamo)">
                                         {{ cliente.cuotas_pagadas }}
                                     </div>
-                                </td>
-                                <td>{{ cliente.nombre }} {{ cliente.referencia }}</td>
+                                </td >
+                                <td class="nom-cliente">{{ cliente.nombre }} {{ cliente.referencia }}</td>
                                 <td class="columna-nota">
                                     <!-- Admin sees all nota options -->
                                     <template v-if="role === 1">
@@ -94,13 +94,13 @@
                                         </span>
                                     </template>
                                 </td>
-                                <td>
+                                <td class="dinero">
                                     <div class="contenedor-pagos">
                                         ${{ cliente.abono || 0 }}
-                                        <button @click="abrirModalPago(cliente)">Pagar</button>
+                                        <button class="btn-pagos" @click="abrirModalPago(cliente)">Pagar</button>
                                     </div>
                                 </td>
-                                <td>
+                                <td class="dinero">
                                     <div class="contenedor-deuda">
                                         ${{ cliente.saldo_restante }}
                                         <label>$ {{ cliente.abono_capital }}</label>
@@ -592,9 +592,9 @@ button {
     border-top: 1px solid var(--color-light);
 }
 
-.ver-mas {
-    cursor: pointer;
-    color: var(--color-azul-1);
+.btn-pagos {
+    border: none;
+    color: var(--color-blanco);
 }
 
 .fila-expandida {
@@ -662,6 +662,10 @@ button {
 @media screen and (max-width: 768px) {
 
     /*===================tabla ======================*/
+    .modal-overlay {
+        padding: 1rem;
+    }
+
     .filtros {
         margin-top: 2rem;
         align-items: stretch;
@@ -699,12 +703,27 @@ button {
         font-size: 1rem;
     }
 
+    .contenedor-tabla .tabla-clientes .nom-cliente {
+        width: 180px;
+        white-space: normal;
+        word-break: break-word;
+        font-size: 0.95rem;
+    }
+
+    .contenedor-tabla .tabla-clientes .dinero {
+        width: 100px;
+        white-space: normal;
+        word-break: break-word;
+        font-size: 0.95rem;
+    }
+
     .contenedor-tabla .tabla-clientes .columna-min {
         white-space: nowrap;
         text-align: center;
         font-size: 1rem;
         width: 30px;
     }
+
 
     .contenedor-tabla .tabla-clientes td,
     .contenedor-tabla .tabla-clientes th {

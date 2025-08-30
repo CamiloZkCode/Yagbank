@@ -167,8 +167,9 @@
                     <tbody>
                         <template v-for="cliente in clientesFiltrados" :key="cliente.documento_cliente">
                             <tr>
-                                <td>{{ cliente.nombre }} {{ cliente.apellido }} {{ cliente.referencia }}</td>
-                                <td>{{ cliente.nombre_asesor }}</td>
+                                <td class="nombre">{{ cliente.nombre }} {{ cliente.apellido }} {{ cliente.referencia }}
+                                </td>
+                                <td class="nombre">{{ cliente.nombre_asesor }}</td>
                                 <td>
                                     <span
                                         :class="['estado-badge', cliente.cliente_activo == 1 ? 'activo' : 'inactivo']">
@@ -906,8 +907,19 @@ table tbody tr:last-child td {
         position: relative;
     }
 
+    .contenedor-tabla .tabla-clientes .nombre {
+        width: 140px;
+        white-space: normal;
+        word-break: break-word;
+    }
+
     .contenedor-tabla .tabla-clientes {
-        min-width: 160%;
+        min-width: 105%;
+    }
+
+    table th,
+    td {
+        padding-left: 0.5rem;
     }
 
     .contenedor-tabla table {

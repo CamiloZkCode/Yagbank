@@ -520,9 +520,9 @@ table tbody tr:last-child td {
     }
 
     .contenedor-tabla table {
-        width: 100%;
+         width: 100%;
         margin-top: 1rem;
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
 
     .contenedor-tabla table span {
