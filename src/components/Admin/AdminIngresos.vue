@@ -545,9 +545,5 @@ table tbody tr:last-child td {
     th {
         padding: 0rem 1rem;
     }
-
-
-
-
 }
 </style>

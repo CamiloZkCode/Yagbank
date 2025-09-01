@@ -2,8 +2,7 @@
   <div>
     <h1>Tarjetas</h1>
     <AdminIncio />
-    <SupervisorIncio v-if="auth.isSupervisor" />
-    <AsesorIncio v-if="auth.isAsesor" />
+    
     
     <!-- Modal para datos personales -->
     <div v-if="mostrarModalDatos" class="modal-overlay">

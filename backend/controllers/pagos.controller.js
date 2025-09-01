@@ -6,6 +6,8 @@ const {
   verificarLiquidacion,
   getPrestamosActivos,
   getCuotasPrestamo,
+  updateCuotaStates,
+  guardarOrdenPrestamos,
 } = require("../models/pagos.models");
 const { obtenerCajaPorUsuarioYFecha } = require("../models/caja.models");
 const { fechaHoy } = require("../utils/fechas.js");
@@ -17,6 +19,9 @@ async function realizarPago(req, res) {
 
     const { id_prestamo, tipo, monto } = req.body;
     const today = fechaHoy();
+
+    // Actualizar estados de cuotas morosas antes de procesar el pago
+    await updateCuotaStates(today);
 
     // Verificar préstamo activo
     const [prestamoRows] = await conn.query(
@@ -48,12 +53,13 @@ async function realizarPago(req, res) {
     let totalAmount = 0;
 
     if (tipo === "cuota") {
+      // Seleccionar la primera cuota no pagada, priorizando las morosas
       const [cuotaRows] = await conn.query(
         `
         SELECT id_cuota, monto AS monto_original
         FROM cuotas 
-        WHERE id_prestamo = ? AND pagada = FALSE 
-        ORDER BY numero_cuota LIMIT 1
+        WHERE id_prestamo = ? AND estado != 'pagada' 
+        ORDER BY CASE WHEN estado = 'no_pagada' THEN 0 ELSE 1 END, numero_cuota LIMIT 1
       `,
         [id_prestamo]
       );
@@ -104,6 +110,10 @@ async function getDatosPagos(req, res) {
     const role = req.user.id_rol;
     const today = fechaHoy();
     console.log("Consultando datos de pagos:", { userId, role, today });
+
+    // Actualizar estados de cuotas morosas antes de obtener datos
+    await updateCuotaStates(today);
+
     const clientes = await getPrestamosActivos(userId, role, today);
     console.log("Clientes devueltos:", clientes);
 
@@ -114,7 +124,7 @@ async function getDatosPagos(req, res) {
       FROM cuotas cu
       JOIN prestamos_clientes pc ON cu.id_prestamo = pc.id_prestamo
       JOIN clientes cl ON pc.documento_cliente = cl.documento_cliente
-      WHERE cu.fecha_pagada = ?
+      WHERE cu.fecha_pagada = ? AND cu.estado = 'pagada'
     `;
     const paramsCont = [today];
     if (role === 3) {
@@ -141,6 +151,11 @@ async function getDatosPagos(req, res) {
 async function getCuotas(req, res) {
   try {
     const { id } = req.params;
+    const today = fechaHoy();
+
+    // Actualizar estados de cuotas morosas antes de obtener cuotas
+    await updateCuotaStates(today);
+
     const cuotas = await getCuotasPrestamo(id);
     res.json(cuotas);
   } catch (error) {
@@ -183,10 +198,25 @@ async function marcarNota(req, res) {
   }
 }
 
+async function guardarOrden(req, res) {
+  try {
+    const userId = req.user.id_usuario; // 🔑 del token JWT o sesión
+    const { orden } = req.body; // [{id_prestamo: 1, orden: 1}, ...]
+
+    await guardarOrdenPrestamos(userId, orden);
+
+    res.json({ success: true, message: "Orden guardada correctamente" });
+  } catch (error) {
+    console.error("Error en guardarOrden:", error);
+    res.status(500).json({ error: "Error al guardar orden" });
+  }
+}
+
 module.exports = {
   realizarPago,
   getDatosPagos,
   getCuotas,
   marcarClavo,
   marcarNota,
+  guardarOrden,
 };

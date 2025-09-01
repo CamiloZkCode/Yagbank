@@ -49,97 +49,108 @@
                 <table class="tabla-clientes">
                     <thead>
                         <tr>
-                            <th>N°</th>
-                            <th>Cliente</th>
-                            <th>Nota</th>
-                            <th>Abono</th>
-                            <th>Saldo</th>
+                            <td class="columna-min"></td>
+                            <th class="columna-min">N°</th>
+                            <th class="nom-cliente">Cliente</th>
+                            <th class="columna-nota">Nota</th>
+                            <th class="dinero">Abono</th>
+                            <th class="dinero">Saldo</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <template v-for="cliente in ClienteFiltro" :key="cliente.id_prestamo">
-                            <tr>
-                                <td class="columna-min">
-                                    <div class="estado" :style="{ background: getEstadoColor(cliente.cuotas_mora) }"
-                                        @click="toggleExpand(cliente.id_prestamo)">
-                                        {{ cliente.cuotas_pagadas }}
-                                    </div>
-                                </td >
-                                <td class="nom-cliente">{{ cliente.nombre }} {{ cliente.referencia }}</td>
-                                <td class="columna-nota">
-                                    <!-- Admin sees all nota options -->
-                                    <template v-if="role === 1">
-                                        <span class="material-symbols-outlined up"
-                                            :class="{ active: cliente.nota_credito === 'up' }"
-                                            @click="marcarClienteNota(cliente.id_cliente, 'up')">
-                                            arrow_warm_up
-                                        </span>
-                                        <span class="material-symbols-outlined down"
-                                            :class="{ active: cliente.nota_credito === 'down' }"
-                                            @click="marcarClienteNota(cliente.id_cliente, 'down')">
-                                            arrow_cool_down
-                                        </span>
-                                        <span class="material-symbols-outlined block"
-                                            @click="marcarClienteClavo(cliente.id_cliente)">
-                                            block
-                                        </span>
-                                    </template>
-                                    <!-- Supervisor sees only the active nota -->
-                                    <template v-else-if="role === 2 && cliente.nota_credito">
-                                        <span class="material-symbols-outlined" :class="{
-                                            up: cliente.nota_credito === 'up',
-                                            down: cliente.nota_credito === 'down'
-                                        }">
-                                            {{ cliente.nota_credito === 'up' ? 'arrow_warm_up' : 'arrow_cool_down' }}
-                                        </span>
-                                    </template>
-                                </td>
-                                <td class="dinero">
-                                    <div class="contenedor-pagos">
-                                        ${{ cliente.abono || 0 }}
-                                        <button class="btn-pagos" @click="abrirModalPago(cliente)">Pagar</button>
-                                    </div>
-                                </td>
-                                <td class="dinero">
-                                    <div class="contenedor-deuda">
-                                        ${{ cliente.saldo_restante }}
-                                        <label>$ {{ cliente.abono_capital }}</label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-if="usuarioExpandido === cliente.id_prestamo">
-                                <td colspan="5" class="fila-expandida">
-                                    <div class="info-extra">
-                                        <strong>Dirección:</strong> {{ cliente.direccion }} &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Teléfono:</strong> {{ cliente.telefono }}
-                                    </div>
-                                    <div class="info-extra">
-                                        <strong>Crédito:</strong> ${{ cliente.prestamo_total }}
-                                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Número Cuotas:</strong> {{ cliente.numero_cuotas }}
-                                    </div>
-                                    <div class="info-extra">
-                                        <strong>Solicitud Crédito:</strong> {{ formatDate(cliente.fecha_prestamo) }}
-                                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                                        <strong>Fecha Finalización:</strong> {{ formatDate(cliente.fecha_finalizacion)
-                                        }}
-                                    </div>
-                                    <div class="info-extra">
-                                        <h3>Cuotas</h3>
-                                        <div class="calendario-cuotas">
-                                            <div class="grid-cuotas">
-                                                <div v-for="cuota in generarCuotasPorCliente(cliente.id_prestamo, cliente.numero_cuotas)"
-                                                    :key="cuota.numero" class="cuota"
-                                                    :style="{ background: getCuotaColor(cuota, cliente) }">
-                                                    {{ cuota.numero }}
+
+                    <!-- Componente draggable corregido -->
+                    <draggable v-model="CreditoCliente" tag="tbody" item-key="id_prestamo" handle=".drag-handle"
+                        @end="onDragEnd" @start="onDragStart" :animation="200">
+                        <template #item="{ element: cliente }">
+                            <tbody v-show="clienteVisible(cliente)">
+                                <tr :key="cliente.id_prestamo">
+                                    <td class="columna-min">
+                                        <span class="material-symbols-outlined drag-handle">drag_indicator</span>
+                                    </td>
+                                    <td class="columna-min">
+                                        <div class="estado" :style="{ background: getEstadoColor(cliente.cuotas_mora) }"
+                                            @click="toggleExpand(cliente.id_prestamo)">
+                                            {{ cliente.cuotas_pagadas }}
+                                        </div>
+                                    </td>
+                                    <td class="nom-cliente">{{ cliente.nombre }} {{ cliente.referencia }}</td>
+                                    <td class="columna-nota">
+                                        <template v-if="role === 1">
+                                            <span class="material-symbols-outlined up"
+                                                :class="{ active: cliente.nota_credito === 'up' }"
+                                                @click="marcarClienteNota(cliente.id_cliente, 'up')">
+                                                arrow_warm_up
+                                            </span>
+                                            <span class="material-symbols-outlined down"
+                                                :class="{ active: cliente.nota_credito === 'down' }"
+                                                @click="marcarClienteNota(cliente.id_cliente, 'down')">
+                                                arrow_cool_down
+                                            </span>
+                                            <span class="material-symbols-outlined block"
+                                                @click="marcarClienteClavo(cliente.id_cliente)">
+                                                block
+                                            </span>
+                                        </template>
+                                        <template v-else-if="(role === 2 || role === 3) && cliente.nota_credito">
+                                            <span class="material-symbols-outlined" :class="{
+                                                up: cliente.nota_credito === 'up',
+                                                down: cliente.nota_credito === 'down'
+                                            }">
+                                                {{ cliente.nota_credito === 'up' ? 'arrow_warm_up' : 'arrow_cool_down'
+                                                }}
+                                            </span>
+                                        </template>
+                                    </td>
+                                    <td class="dinero">
+                                        <div class="contenedor-pagos">
+                                            ${{ cliente.abono || 0 }}
+                                            <button class="btn-pagos" @click="abrirModalPago(cliente)">Pagar</button>
+                                        </div>
+                                    </td>
+                                    <td class="dinero">
+                                        <div class="contenedor-deuda">
+                                            ${{ cliente.saldo_restante }}
+                                            <label>$ {{ cliente.abono_capital }}</label>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- fila expandida -->
+                                <tr v-if="usuarioExpandido === cliente.id_prestamo">
+                                    <td colspan="6" class="fila-expandida">
+                                        <div class="info-extra">
+                                            <strong>Dirección:</strong> {{ cliente.direccion }}
+                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <strong>Teléfono:</strong> {{ cliente.telefono }}
+                                        </div>
+                                        <div class="info-extra">
+                                            <strong>Crédito:</strong> ${{ cliente.prestamo_total }}
+                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <strong>Número Cuotas:</strong> {{ cliente.numero_cuotas }}
+                                        </div>
+                                        <div class="info-extra">
+                                            <strong>Solicitud Crédito:</strong> {{ formatDate(cliente.fecha_prestamo) }}
+                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <strong>Fecha Finalización:</strong> {{
+                                                formatDate(cliente.fecha_finalizacion) }}
+                                        </div>
+                                        <div class="info-extra">
+                                            <h3>Cuotas</h3>
+                                            <div class="calendario-cuotas">
+                                                <div class="grid-cuotas">
+                                                    <div v-for="cuota in generarCuotasPorCliente(cliente.id_prestamo, cliente.numero_cuotas)"
+                                                        :key="cuota.numero" class="cuota"
+                                                        :style="{ background: getCuotaColor(cuota, cliente) }">
+                                                        {{ cuota.numero }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
+                            </tbody>
                         </template>
-                    </tbody>
+                    </draggable>
                 </table>
             </div>
 
@@ -155,10 +166,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { obtenerDatosPagos, realizarPago, obtenerCuotasPrestamo, marcarClavo, marcarNota } from '@/services/pago'
+import draggable from "vuedraggable"
+import { obtenerDatosPagos, realizarPago, obtenerCuotasPrestamo, marcarClavo, marcarNota, guardarOrdenPrestamos } from '@/services/pago'
 import moment from 'moment-timezone'
+import alertify from 'alertifyjs'
+import 'alertifyjs/build/css/alertify.css'
 
-// Date utility functions
+// Funciones de utilidad para fechas
 const obtenerFechaLocal = () => {
     return moment().tz("America/Bogota").format("YYYY-MM-DD")
 }
@@ -168,8 +182,7 @@ const formatDate = (dateString) => {
 }
 
 const authStore = useAuthStore()
-const role = computed(() => authStore.user.id_rol) // Role: 1 (Admin), 2 (Supervisor), 3 (Advisor)
-
+const role = computed(() => authStore.user.id_rol)
 const pagoCuota = ref(false)
 const clienteSeleccionado = ref(null)
 const tipoPago = ref("")
@@ -179,16 +192,16 @@ const usuarioExpandido = ref(null)
 const filtroNombre = ref('')
 const CreditoCliente = ref([])
 const contadores = ref({ tarjetas_cobradas: 0, valor_recaudado: 0 })
-const today = obtenerFechaLocal() // Use moment for current date
+const today = obtenerFechaLocal()
+const cuotasPrestamo = ref({})
 
-// Fetch data on component mount
 const fetchData = async () => {
     try {
         const response = await obtenerDatosPagos()
         CreditoCliente.value = response.clientes.map(cliente => ({
             ...cliente,
             valor_cuota: cliente.prestamo_total / cliente.numero_cuotas,
-            referencia: cliente.referencia || '' // Show empty string if null
+            referencia: cliente.referencia || ''
         }))
         contadores.value = response.contadores
     } catch (error) {
@@ -196,8 +209,6 @@ const fetchData = async () => {
     }
 }
 
-// Fetch cuotas for a specific loan
-const cuotasPrestamo = ref({})
 const fetchCuotas = async (idPrestamo) => {
     try {
         const cuotas = await obtenerCuotasPrestamo(idPrestamo)
@@ -207,7 +218,6 @@ const fetchCuotas = async (idPrestamo) => {
     }
 }
 
-// Open payment modal
 const abrirModalPago = (cliente) => {
     clienteSeleccionado.value = cliente
     pagoCuota.value = true
@@ -216,15 +226,12 @@ const abrirModalPago = (cliente) => {
     montoLiquidar.value = cliente.saldo_restante
 }
 
-// Save payment
 const guardarPago = async () => {
     try {
         const idPrestamo = clienteSeleccionado.value.id_prestamo
-        const valorCuota = clienteSeleccionado.value.valor_cuota
         const saldoRestante = clienteSeleccionado.value.saldo_restante
         let tipo = tipoPago.value === 'abono' ? 'cuota' : 'todo'
 
-        // Determinar el tipo de pago basado en el monto ingresado
         if (tipoPago.value === 'abono' && montoAbono.value >= saldoRestante) {
             tipo = 'todo'
         }
@@ -232,26 +239,44 @@ const guardarPago = async () => {
         const data = {
             id_prestamo: idPrestamo,
             tipo,
-            monto: tipoPago.value === 'abono' ? montoAbono.value : saldoRestante
+            monto: tipoPago.value === 'abono' ? montoAbono.value : saldoRestante,
         }
 
-        // Validar el monto
         if (tipoPago.value === 'abono' && (montoAbono.value <= 0 || montoAbono.value > saldoRestante)) {
             throw new Error('Monto inválido para el pago de la cuota')
         }
 
         await realizarPago(data)
+        cuotasPrestamo.value[idPrestamo] = []
         await fetchCuotas(idPrestamo)
         await fetchData()
         pagoCuota.value = false
         limpiarFormulario()
+
+        // ✅ Notificación con Alertify
+        const fechaHoy = new Date().toLocaleDateString('es-ES')
+
+        if (tipo === 'cuota') {
+            alertify.success(`
+                <h4>Pago Realizado</h4>
+                <p>Cuota procesada con éxito</p>
+                <p><strong>Fecha:</strong> ${fechaHoy}</p>
+            `)
+        } else {
+            alertify.success(`
+                <h4>Pago Realizado</h4>
+                <p>Préstamo liquidado con éxito</p>
+                <p><strong>Valor:</strong> $${saldoRestante}</p>
+                <p><strong>Fecha:</strong> ${fechaHoy}</p>
+            `)
+        }
+
     } catch (error) {
-        console.error('Error processing payment:', error)
-        alert('Error al procesar el pago: ' + error.message)
+        console.error('Error al procesar el pago:', error)
+        alertify.error('Error al procesar el pago: ' + error.message)
     }
 }
 
-// Mark client as "clavo"
 const marcarClienteClavo = async (documento_cliente) => {
     try {
         await marcarClavo({ documento_cliente })
@@ -261,7 +286,6 @@ const marcarClienteClavo = async (documento_cliente) => {
     }
 }
 
-// Mark nota_credito
 const marcarClienteNota = async (documento_cliente, nota_credito) => {
     try {
         await marcarNota({ documento_cliente, nota_credito })
@@ -271,7 +295,6 @@ const marcarClienteNota = async (documento_cliente, nota_credito) => {
     }
 }
 
-// Clear form
 const limpiarFormulario = () => {
     tipoPago.value = ""
     montoAbono.value = 0
@@ -279,7 +302,6 @@ const limpiarFormulario = () => {
     clienteSeleccionado.value = null
 }
 
-// Toggle expanded row and fetch cuotas
 const toggleExpand = async (id_prestamo) => {
     if (usuarioExpandido.value === id_prestamo) {
         usuarioExpandido.value = null
@@ -289,28 +311,24 @@ const toggleExpand = async (id_prestamo) => {
     }
 }
 
-// Filter clients by name
-const ClienteFiltro = computed(() =>
-    CreditoCliente.value.filter(cliente =>
-        cliente.nombre.toLowerCase().includes(filtroNombre.value.toLowerCase())
-    )
-)
+const clienteVisible = (cliente) => {
+    if (!filtroNombre.value) return true
+    return cliente.nombre.toLowerCase().includes(filtroNombre.value.toLowerCase())
+}
 
-// Generate cuotas for display
 const generarCuotasPorCliente = (id_prestamo, numero_cuotas) => {
     const cuotas = cuotasPrestamo.value[id_prestamo] || []
     return Array.from({ length: numero_cuotas }, (_, i) => {
         const cuota = cuotas.find(c => c.numero_cuota === i + 1)
         return {
             numero: i + 1,
-            pagada: cuota ? cuota.pagada : false,
+            estado: cuota ? cuota.estado : 'pendiente',
             fecha_pago: cuota ? cuota.fecha_pago : null,
             fecha_pagada: cuota ? cuota.fecha_pagada : null
         }
     })
 }
 
-// Determine background color for N° column based on cuotas_mora
 const getEstadoColor = (cuotas_mora) => {
     if (cuotas_mora >= 6) return 'var(--color-rojo-5)'
     if (cuotas_mora >= 4) return 'var(--color-morado-4)'
@@ -319,24 +337,65 @@ const getEstadoColor = (cuotas_mora) => {
     return 'var(--color-aprobado-1)'
 }
 
-// Determine color for individual cuota
 const getCuotaColor = (cuota, cliente) => {
-    if (cliente.estado === 'Liquidado' || cuota.pagada) {
-        return 'var(--color-aprobado-1)' // Green for paid or liquidated
+    if (cliente.estado === 'Liquidado' || cuota.estado === 'pagada') {
+        return 'var(--color-aprobado-1)'
     }
-    if (cuota.fecha_pago && cuota.fecha_pago < today) {
-        return 'var(--color-rojo-5)' // Red for overdue
+    if (cuota.estado === 'no_pagada') {
+        return 'var(--color-rojo-5)'
     }
-    return 'var(--color-blanco)' // White for not yet due
+    return 'var(--color-blanco)'
 }
 
-// Load data on mount
+const onDragStart = () => {
+    // Cerrar cualquier fila expandida al iniciar el arrastre
+    usuarioExpandido.value = null
+}
+
+const onDragEnd = async () => {
+    try {
+        const orden = CreditoCliente.value.map((cliente, index) => ({
+            id_prestamo: cliente.id_prestamo,
+            orden: index + 1
+        }))
+        await guardarOrdenPrestamos(orden)
+    } catch (error) {
+        console.error('Error saving order:', error)
+        alert('Error al guardar el orden de los créditos')
+        await fetchData() // Refrescar datos para mantener consistencia
+    }
+}
+
 fetchData()
 </script>
 
 
 <style scoped>
 /*=======================Modal Pago Cuota=========================*/
+.drag-handle {
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--color-oscuro);
+    opacity: 0.7;
+}
+
+
+
+/* Mejora visual para el arrastre */
+.sortable-ghost {
+    opacity: 0.5;
+}
+
+.sortable-chosen {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.sortable-drag {
+    opacity: 1 !important;
+}
 
 .icono-boton {
     width: 2rem;
@@ -477,7 +536,6 @@ input[type="number"]::-webkit-inner-spin-button {
     box-shadow: var(--box-shadow);
     padding: var(--card-padding);
     transition: all 300ms ease;
-
 }
 
 .tabla-scrollable::-webkit-scrollbar {
@@ -489,11 +547,20 @@ input[type="number"]::-webkit-inner-spin-button {
     border-radius: 0.8rem;
 }
 
-.contenedor-tabla .tabla-clientes {
-    width: auto;
-    min-width: 100%;
+.tabla-clientes {
+    width: 100%;
     border-collapse: collapse;
 }
+
+.tabla-clientes tr {
+    display: table-row;
+}
+
+.estado {
+    cursor: move;
+}
+
+
 
 .contenedor-tabla table {
     text-align: center;
@@ -504,10 +571,27 @@ input[type="number"]::-webkit-inner-spin-button {
     padding: 0;
     box-shadow: none;
     background: transparent;
+    border-collapse: collapse;
+
 }
 
 .contenedor-tabla .tabla-scrollable:hover {
     box-shadow: none;
+}
+
+thead,
+tbody,
+tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Quitamos separación visual entre múltiples TBODY */
+tbody {
+    border: none;
+    margin: 0;
+    padding: 0;
 }
 
 table tbody td {
@@ -516,14 +600,19 @@ table tbody td {
     color: var(--color-dark-variant);
 }
 
-
 .contenedor-tabla table .columna-min {
     width: 40px;
     font-weight: 600;
 }
 
 .contenedor-tabla table .columna-nota {
-    width: 100px;
+    width: 90px;
+}
+
+.contenedor-tabla .tabla-clientes .dinero {
+    width: 150px;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .contenedor-tabla .tabla-clientes .estado {
@@ -688,13 +777,12 @@ button {
         height: 55vh;
     }
 
-
     .contenedor-tabla {
         position: relative;
     }
 
     .contenedor-tabla .tabla-clientes {
-        min-width: 120%;
+        min-width: 90%;
 
     }
 
@@ -704,17 +792,16 @@ button {
     }
 
     .contenedor-tabla .tabla-clientes .nom-cliente {
-        width: 180px;
+        width: 120px;
         white-space: normal;
         word-break: break-word;
         font-size: 0.95rem;
     }
 
     .contenedor-tabla .tabla-clientes .dinero {
-        width: 100px;
+        width: 60px;
         white-space: normal;
         word-break: break-word;
-        font-size: 0.95rem;
     }
 
     .contenedor-tabla .tabla-clientes .columna-min {
@@ -724,6 +811,11 @@ button {
         width: 30px;
     }
 
+    .comtentedor-tabla .tabla-clientes .columna-nota {
+        width: 60px;
+        white-space: normal;
+        word-break: break-word;
+    }
 
     .contenedor-tabla .tabla-clientes td,
     .contenedor-tabla .tabla-clientes th {

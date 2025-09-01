@@ -151,7 +151,65 @@ async function registrarPrestamos(req, res) {
 
     const idAsesor = cliente[0].id_asesor;
 
-    // 3. Verificar que el asesor existe y está activo
+    // 3. Obtener el rol del usuario logueado
+    const [usuarioLogueado] = await conn.query(
+      `SELECT id_rol, id_administrador 
+       FROM usuarios 
+       WHERE id_usuario = ? AND estado = TRUE
+       LIMIT 1`,
+      [nuevoPrestamo.creado_por]
+    );
+
+    if (!usuarioLogueado[0]) {
+      await conn.rollback();
+      return res.status(400).json({
+        error: "USUARIO_INVALIDO",
+        message: "El usuario no existe o no está activo",
+      });
+    }
+
+    const rolUsuario = usuarioLogueado[0].id_rol;
+
+    // 4. Validar permisos según el rol del usuario
+    if (rolUsuario === 3) {
+      // Asesor
+      // El asesor solo puede crear préstamos para sus propios clientes
+      if (idAsesor !== nuevoPrestamo.creado_por) {
+        await conn.rollback();
+        return res.status(403).json({
+          error: "PERMISO_DENEGADO",
+          message: "El asesor no está asignado a este cliente",
+        });
+      }
+    } else if (rolUsuario === 2) {
+      // Supervisor
+      // El supervisor solo puede crear préstamos para clientes de asesores bajo su supervisión
+      const [asesorSupervisor] = await conn.query(
+        `SELECT id_usuario 
+         FROM usuarios 
+         WHERE id_usuario = ? AND id_administrador = ? AND id_rol = 3 AND estado = TRUE
+         LIMIT 1`,
+        [idAsesor, nuevoPrestamo.creado_por]
+      );
+
+      if (!asesorSupervisor[0]) {
+        await conn.rollback();
+        return res.status(403).json({
+          error: "PERMISO_DENEGADO",
+          message:
+            "El supervisor no tiene autoridad sobre el asesor asignado a este cliente",
+        });
+      }
+    } else if (rolUsuario !== 1) {
+      // Solo administradores (rol 1) tienen permisos ilimitados
+      await conn.rollback();
+      return res.status(403).json({
+        error: "ROL_NO_PERMITIDO",
+        message: "El rol del usuario no está autorizado para crear préstamos",
+      });
+    }
+
+    // 5. Verificar que el asesor existe y está activo
     const [asesor] = await conn.query(
       `SELECT id_usuario FROM usuarios 
        WHERE id_usuario = ? AND id_rol = '3' AND estado = TRUE
@@ -167,7 +225,7 @@ async function registrarPrestamos(req, res) {
       });
     }
 
-    // 4. Obtener la caja del asesor para HOY
+    // 6. Obtener la caja del asesor para HOY
     const cajaAsesor = await obtenerCajaPorUsuarioYFecha(idAsesor, hoy);
 
     if (!cajaAsesor) {
@@ -178,7 +236,7 @@ async function registrarPrestamos(req, res) {
       });
     }
 
-    // 5. Validar préstamo único por cliente/día
+    // 7. Validar préstamo único por cliente/día
     const [prestamoExistente] = await conn.query(
       `SELECT id_prestamo FROM prestamos_clientes 
        WHERE documento_cliente = ? AND fecha_inicio = ?
@@ -194,12 +252,12 @@ async function registrarPrestamos(req, res) {
       });
     }
 
-    //Validar Estado del Prestamo
+    // 8. Validar Estado del Préstamo
     const [prestamoActivo] = await conn.query(
       `SELECT id_prestamo 
-    FROM prestamos_clientes 
-    WHERE documento_cliente = ? AND estado = 'Activo'
-    LIMIT 1`,
+       FROM prestamos_clientes 
+       WHERE documento_cliente = ? AND estado = 'Activo'
+       LIMIT 1`,
       [nuevoPrestamo.documento_cliente]
     );
 
@@ -216,7 +274,7 @@ async function registrarPrestamos(req, res) {
     const datosPrestamo = {
       ...nuevoPrestamo,
       id_caja: cajaAsesor.id_caja,
-      creado_por: nuevoPrestamo.creado_por, // Ajustado, asumiendo que creado_por viene del body
+      creado_por: nuevoPrestamo.creado_por,
       fecha_inicio: hoy,
       interes,
       total,
@@ -227,15 +285,13 @@ async function registrarPrestamos(req, res) {
     const idPrestamo = await crearPrestamo(datosPrestamo);
     const numeroCuotas = Number(nuevoPrestamo.numero_cuotas);
 
-
     // ===== Crear cuotas automáticamente =====
     await crearCuotas(
       idPrestamo,
       numeroCuotas,
       hoy,
       valorCuota,
-      nuevoPrestamo.forma_pago,
-      cajaAsesor.id_caja
+      nuevoPrestamo.forma_pago
     );
 
     await conn.commit();
@@ -263,4 +319,3 @@ async function registrarPrestamos(req, res) {
 }
 
 module.exports = { registrarPrestamos };
-

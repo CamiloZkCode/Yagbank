@@ -57,11 +57,11 @@ async function crearCuotas(idPrestamo, numeroCuotas, fechaInicio, valorCuota, fo
         throw new Error("Forma de pago inválida");
     }
 
-    cuotas.push([idPrestamo, null, i, fecha.format("YYYY-MM-DD"), valorCuota]);
+    cuotas.push([idPrestamo, null, i, fecha.format("YYYY-MM-DD"), valorCuota, 'pendiente']);
   }
 
   const query = `
-    INSERT INTO cuotas (id_prestamo, id_caja, numero_cuota, fecha_pago, monto)
+    INSERT INTO cuotas (id_prestamo, id_caja, numero_cuota, fecha_pago, monto,estado)
     VALUES ?
   `;
   await db.query(query, [cuotas]);

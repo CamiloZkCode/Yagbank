@@ -57,32 +57,29 @@
                     @click="mostrarCredito = false; resetearFormularioCredito()">close</span>
                 <h2>Registrar Préstamo</h2>
                 <form @submit.prevent="guardarCredito">
-                    <input v-model="credito.documento_cliente" type="number" placeholder="Cédula del Cliente"
-                        required />
-
+                    <div>
+                        <label>Cédula del Cliente:</label>
+                        <input v-model="credito.documento_cliente" type="number" placeholder="Cédula del Cliente"
+                            :readonly="esDocumentoPrellenado" :class="{ 'input-readonly': esDocumentoPrellenado }"
+                            required />
+                    </div>
                     <label>Fecha de Solicitud:</label>
                     <input v-model="credito.fecha_solicitud" type="date" readonly />
-
                     <label>Moneda:</label>
                     <select v-model="credito.moneda">
                         <option value="USD">Dólares (USD)</option>
                         <option value="CLP">Pesos Chilenos (CLP)</option>
                         <option value="BRL">Real Brasileño (BRL)</option>
                     </select>
-
-                    <label>Prestamo:</label>
+                    <label>Préstamo:</label>
                     <input v-model="credito.valor_prestamo" type="number" placeholder="Valor del Préstamo" required
                         min="1" />
-
                     <label>Cantidad de Cuotas (máx. 24):</label>
                     <input v-model="credito.numero_cuotas" type="number" :max="24" required min="1" />
-
                     <label>Valor por Cuota:</label>
                     <input :value="formatearMoneda(credito.valor_diario)" type="text" readonly />
-
                     <label>Valor Total (+20%):</label>
                     <input :value="formatearMoneda(credito.total)" type="text" readonly />
-
                     <label>Forma de Pago:</label>
                     <select v-model="credito.forma_pago" required>
                         <option value="Diario">Diaria</option>
@@ -90,15 +87,12 @@
                         <option value="Quincenal">Quincenal</option>
                         <option value="Mensual">Mensual</option>
                     </select>
-
                     <label>Fecha de Finalización:</label>
                     <input v-model="credito.fecha_finalizacion" type="date" readonly />
-
                     <button type="submit">Guardar Crédito</button>
                 </form>
             </div>
         </div>
-
 
         <!--Modal Edicion Cliente-->
         <div v-if="mostrarEditarCliente" class="modal-overlay">
@@ -162,6 +156,7 @@
                             <th>Estado</th>
                             <th></th>
                             <th></th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -175,6 +170,11 @@
                                         :class="['estado-badge', cliente.cliente_activo == 1 ? 'activo' : 'inactivo']">
                                         {{ cliente.cliente_activo == 1 ? 'Activo' : 'Inactivo' }}
                                     </span>
+                                </td>
+                                <td>
+                                    <img class="icono-boton" src="/src/assets/icons/NuevoCredito.png"
+                                        alt="Crear préstamo" @click="abrirModalCrearPrestamo(cliente.documento_cliente)"
+                                        title="Crear préstamo">
                                 </td>
                                 <td>
                                     <img class="icono-boton" src="/src/assets/icons/Edit.png" alt=""
@@ -272,53 +272,47 @@
 
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { crearClientes, listarClientesConPrestamosSupervisor } from '@/services/clientes'
-import { crearPrestamos } from '@/services/prestamos'
-import { obtenerAsesores } from '@/services/usuario'
-import alertify from 'alertifyjs'
-import 'alertifyjs/build/css/alertify.css'
-import moment from "moment-timezone"
+import { ref, computed, watch, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { crearClientes, listarClientesConPrestamosSupervisor } from '@/services/clientes';
+import { crearPrestamos } from '@/services/prestamos';
+import { obtenerAsesores } from '@/services/usuario';
+import alertify from 'alertifyjs';
+import 'alertifyjs/build/css/alertify.css';
+import moment from 'moment-timezone';
 
-
-
-
-const authStore = useAuthStore()
-const usuarioLogueado = computed(() => authStore.user)
+const authStore = useAuthStore();
+const usuarioLogueado = computed(() => authStore.user);
 
 // Modales
-const mostrarCliente = ref(false)
-const mostrarCredito = ref(false)
-const mostrarEditarCliente = ref(false)
-const filtroNombre = ref("")
-const clientes = ref([])
-const cargando = ref(false)
+const mostrarCliente = ref(false);
+const mostrarCredito = ref(false);
+const mostrarEditarCliente = ref(false);
+const filtroNombre = ref('');
+const clientes = ref([]);
+const cargando = ref(false);
 
+// Nueva variable para controlar si el documento_cliente está prellenado
+const esDocumentoPrellenado = ref(false);
 
-
-//Estados Reactivos
-const supervisores = ref([]) // Cargar lista de supervisores
-const asesores = ref([]) // Cargar lista asesores
-const CreditoCliente = ref([]) // Carga clientes e info sobre el prestamo
-
-
-const obtenerFechaLocal = () => {
-    return moment().tz("America/Bogota").format("YYYY-MM-DD")
-}
-
+// Estados Reactivos
+const supervisores = ref([]);
+const asesores = ref([]);
 
 // Funciones de formato
 const formatNumber = (number) => {
-    if (!number) return '0'
-    return new Intl.NumberFormat('es-CO').format(number)
-}
+    if (!number) return '0';
+    return new Intl.NumberFormat('es-CO').format(number);
+};
 
 const formatDate = (dateString) => {
-    if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('es-ES')
-}
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('es-ES');
+};
 
+const obtenerFechaLocal = () => {
+    return moment().tz('America/Bogota').format('YYYY-MM-DD');
+};
 
 // Cliente
 const cliente = ref({
@@ -334,28 +328,27 @@ const cliente = ref({
     id_asesor: '',
     url_cedula: '',
     url_negocio: '',
-    url_documentonegocio: ''
-})
+    url_documentonegocio: '',
+});
 
 const archivos = ref({
     cedula: null,
     negocio: null,
-    documentonegocio: null
-})
+    documentonegocio: null,
+});
 
 // Función para guardar cliente
 const guardarCliente = async () => {
     try {
         cliente.value.id_supervisor = usuarioLogueado.value?.id;
-        const guardar = await crearClientes(cliente.value)
-
+        await crearClientes(cliente.value);
         alertify.alert(
-            'Confirmación Cliente',   // 🔹 Título personalizado
+            'Confirmación Cliente',
             'Cliente registrado con éxito',
             async function () {
                 mostrarCliente.value = false;
                 limpiarFormulario();
-                await cargarClientes();  // ✅ recarga la tabla
+                await cargarClientes();
             }
         ).set({
             transition: 'fade',
@@ -365,11 +358,12 @@ const guardarCliente = async () => {
             closable: true,
         });
     } catch (error) {
-        console.error(error);
+        console.error('Error al registrar cliente:', error);
+        alertify.error('No se pudo registrar el cliente');
     }
-}
+};
 
-//Limpiar Formulario del cliente
+// Limpiar Formulario del cliente
 const limpiarFormulario = () => {
     cliente.value = {
         documento_cliente: '',
@@ -380,14 +374,11 @@ const limpiarFormulario = () => {
         telefono: '',
         ocupacion: '',
         referencia: '',
-        id_asesor: ''
+        id_asesor: '',
     };
 };
 
-
-
-
-// Creacion Prestamo
+// Creación Préstamo
 const credito = ref({
     documento_cliente: '',
     valor_prestamo: null,
@@ -398,9 +389,8 @@ const credito = ref({
     fecha_finalizacion: '',
     moneda: 'USD',
     forma_pago: 'Diaria',
-    interes: 20
-})
-
+    interes: 20,
+});
 
 const resetearFormularioCredito = () => {
     credito.value = {
@@ -413,85 +403,103 @@ const resetearFormularioCredito = () => {
         fecha_finalizacion: '',
         moneda: 'USD',
         forma_pago: 'Diaria',
-        interes: 20
-    }
-}
+        interes: 20,
+    };
+    esDocumentoPrellenado.value = false;
+};
 
+// Función para abrir el modal con el documento_cliente prellenado
+const abrirModalCrearPrestamo = (documentoCliente) => {
+    credito.value.documento_cliente = documentoCliente;
+    esDocumentoPrellenado.value = true;
+    mostrarCredito.value = true;
+};
 
-//watch para calcular valores del credito 
+// Función para abrir el modal sin prellenar
+const abrirModalCrearPrestamoGeneral = () => {
+    resetearFormularioCredito();
+    credito.value.creado_por = usuarioLogueado.value.id;
+    mostrarCredito.value = true;
+};
+
+// Watch para calcular valores del crédito
 watch(
     [() => credito.value.valor_prestamo, () => credito.value.numero_cuotas, () => credito.value.forma_pago],
     () => {
-        const prestamo = parseFloat(credito.value.valor_prestamo)
-        const cuotas = parseInt(credito.value.numero_cuotas)
-        const formaPago = credito.value.forma_pago
+        const prestamo = parseFloat(credito.value.valor_prestamo);
+        const cuotas = parseInt(credito.value.numero_cuotas);
+        const formaPago = credito.value.forma_pago;
 
         if (!isNaN(prestamo) && !isNaN(cuotas) && cuotas > 0) {
-            const totalConInteres = prestamo * 1.2
-            credito.value.total = totalConInteres.toFixed(2)
-            credito.value.valor_diario = (totalConInteres / cuotas).toFixed(2)
+            const totalConInteres = prestamo * 1.2;
+            credito.value.total = totalConInteres.toFixed(2);
+            credito.value.valor_diario = (totalConInteres / cuotas).toFixed(2);
 
-            // 👉 Fecha base (hoy en zona horaria correcta)
-            let fecha = moment(obtenerFechaLocal(), "YYYY-MM-DD")
-
-            let incremento = 1
+            let fecha = moment(obtenerFechaLocal(), 'YYYY-MM-DD');
+            let incremento = 1;
             switch (formaPago) {
-                case "Diaria": incremento = 1; break
-                case "Semanal": incremento = 7; break
-                case "Quincenal": incremento = 15; break
-                case "Mensual": incremento = 30; break
+                case 'Diaria':
+                    incremento = 1;
+                    break;
+                case 'Semanal':
+                    incremento = 7;
+                    break;
+                case 'Quincenal':
+                    incremento = 15;
+                    break;
+                case 'Mensual':
+                    incremento = 30;
+                    break;
             }
 
-            // 👉 Iteramos para calcular la fecha final, excluyendo domingos
             for (let i = 0; i < cuotas; i++) {
-                fecha.add(incremento, "days")
+                fecha.add(incremento, 'days');
                 if (fecha.day() === 0) {
-                    // Si cae domingo, lo movemos al lunes
-                    fecha.add(1, "days")
+                    fecha.add(1, 'days');
                 }
             }
 
-            credito.value.fecha_finalizacion = fecha.format("YYYY-MM-DD")
+            credito.value.fecha_finalizacion = fecha.format('YYYY-MM-DD');
         } else {
-            credito.value.total = ""
-            credito.value.valor_diario = ""
-            credito.value.fecha_finalizacion = ""
+            credito.value.total = '';
+            credito.value.valor_diario = '';
+            credito.value.fecha_finalizacion = '';
         }
     }
-)
+);
 
 watch(() => credito.value.numero_cuotas, (nuevoValor) => {
     if (nuevoValor && (nuevoValor < 1 || !Number.isInteger(Number(nuevoValor)))) {
-        alertify.error('El número de cuotas debe ser un entero positivo')
-        credito.value.numero_cuotas = null
+        alertify.error('El número de cuotas debe ser un entero positivo');
+        credito.value.numero_cuotas = null;
     }
-})
+});
 
 function onFileChange(event, tipo) {
-    const file = event.target.files[0]
+    const file = event.target.files[0];
     if (file) {
-        archivos.value[tipo] = file
+        archivos.value[tipo] = file;
     }
 }
 
 const localesPorMoneda = {
     USD: 'en-US',
     CLP: 'es-CL',
-    BRL: 'pt-BR'
-}
+    BRL: 'pt-BR',
+};
 
 const formatearMoneda = (valor) => {
-    if (isNaN(valor)) return ''
-    const moneda = credito.value.moneda
-    const locale = localesPorMoneda[moneda] || 'en-US'
+    if (isNaN(valor)) return '';
+    const moneda = credito.value.moneda;
+    const locale = localesPorMoneda[moneda] || 'en-US';
     return new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: moneda,
-        minimumFractionDigits: 0
-    }).format(valor)
-}
+        minimumFractionDigits: 0,
+    }).format(valor);
+};
 
-//Guardar Credito
+// Guardar Crédito
 const guardarCredito = async () => {
     try {
         const datosPrestamo = {
@@ -499,90 +507,77 @@ const guardarCredito = async () => {
             valor_prestamo: Number(credito.value.valor_prestamo),
             forma_pago: credito.value.forma_pago,
             numero_cuotas: Number(credito.value.numero_cuotas),
-            creado_por: usuarioLogueado.value.id  // 👈 supervisor logueado
-        }
+            creado_por: usuarioLogueado.value.id,
+        };
 
-        console.log('Datos a enviar:', datosPrestamo)
-        await crearPrestamos(datosPrestamo)
+        console.log('Datos a enviar:', datosPrestamo);
+        await crearPrestamos(datosPrestamo);
 
         alertify.alert(
             'Préstamo registrado con éxito',
             `
-        <strong>Cliente:</strong> ${datosPrestamo.documento_cliente}<br>
-        <strong>Valor:</strong> ${credito.value.valor_prestamo}<br>
-        <strong>Cuotas:</strong> ${datosPrestamo.numero_cuotas}<br>
-        <strong>Forma de pago:</strong> ${datosPrestamo.forma_pago}
+      <strong>Cliente:</strong> ${datosPrestamo.documento_cliente}<br>
+      <strong>Valor:</strong> ${credito.value.valor_prestamo}<br>
+      <strong>Cuotas:</strong> ${datosPrestamo.numero_cuotas}<br>
+      <strong>Forma de pago:</strong> ${datosPrestamo.forma_pago}
       `,
             async function () {
-                mostrarCredito.value = false
-                resetearFormularioCredito()
-                await cargarClientes() // 👈 recarga desde backend garantizada
-                CreditoCliente.value.push({
-                    id_cliente: datosPrestamo.documento_cliente,
-                    nombre: 'Cliente ' + datosPrestamo.documento_cliente,
-                    numero_cuotas: datosPrestamo.numero_cuotas
-                })
+                mostrarCredito.value = false;
+                resetearFormularioCredito();
+                await cargarClientes();
             }
-        ).set({ transition: 'fade', movable: false })
+        ).set({ transition: 'fade', movable: false });
     } catch (error) {
-        console.error('Error al crear préstamo:', error)
-        alertify.error('Error al crear el préstamo: ' + (error.response?.data?.message || error.message))
+        console.error('Error al crear préstamo:', error);
+        alertify.error('Error al crear el préstamo: ' + (error.response?.data?.message || error.message));
     }
-}
-
-
+};
 
 // Carga de datos
 const cargarClientes = async () => {
-    cargando.value = true
+    cargando.value = true;
     try {
-        const clientesData = await listarClientesConPrestamosSupervisor(usuarioLogueado.value.id)
-        console.log("Clientes data recibido:", clientesData)
-        clientes.value = clientesData
-        console.log("Clientes en variable reactiva:", clientes.value)
+        const clientesData = await listarClientesConPrestamosSupervisor(usuarioLogueado.value.id);
+        console.log('Clientes data recibido:', clientesData);
+        clientes.value = clientesData;
+        console.log('Clientes en variable reactiva:', clientes.value);
     } catch (error) {
-        console.error("Error completo:", error)
-        alertify.error(error.message || "Error al cargar los datos de clientes")
+        console.error('Error completo:', error);
+        alertify.error(error.message || 'Error al cargar los datos de clientes');
     } finally {
-        cargando.value = false
+        cargando.value = false;
     }
-}
+};
 
 // Expansión de tabla
-const usuarioExpandido = ref(null)
+const usuarioExpandido = ref(null);
 const toggleExpand = (id) => {
-    usuarioExpandido.value = usuarioExpandido.value === id ? null : id
-}
+    usuarioExpandido.value = usuarioExpandido.value === id ? null : id;
+};
 
 const clientesFiltrados = computed(() => {
     return clientes.value.filter(c =>
-        (c.nombre + " " + c.apellido)
+        (c.nombre + ' ' + c.apellido)
             .toLowerCase()
             .includes(filtroNombre.value.toLowerCase())
-    )
-})
-
+    );
+});
 
 onMounted(async () => {
     console.log('Iniciando carga de datos...');
     try {
-        //console.log("Usuario logueado:", usuarioLogueado.value);
-
-        const idSupervisor = usuarioLogueado.value?.id; // Ajusta aquí según tu store
+        const idSupervisor = usuarioLogueado.value?.id;
         if (idSupervisor) {
             asesores.value = await obtenerAsesores(idSupervisor);
-
-            //console.log("Asesores cargados:", asesores.value);
-        } else { //console.warn("⚠ No se encontró id en el usuario logueado");
+        } else {
+            console.warn('⚠ No se encontró id en el usuario logueado');
         }
-        await cargarClientes()
-
-        //console.log('Datos cargados completamente');
+        await cargarClientes();
+        console.log('Datos cargados completamente');
     } catch (error) {
-        //console.error('Error en mounted:', error);
+        console.error('Error en mounted:', error);
     }
 });
-
 </script>
 
 
