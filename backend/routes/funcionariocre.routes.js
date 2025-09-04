@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const {
-  crearPrestamoFuncionario,
+ crearPrestamoFuncionario,
   obtenerSolicitudesPendientes,
   aceptarPrestamo,
   rechazarPrestamo,
   obtenerPrestamosAceptados,
-  liquidarPrestamo,
+  realizarPagoFuncionario,
 } = require('../controllers/funcionariocre.controller');
 const { verificarToken } = require('../middlewares/auth.middlewares');
 
@@ -16,6 +16,6 @@ router.get('/pendientes', verificarToken, obtenerSolicitudesPendientes);
 router.post('/aprobar/:id_prestamo', verificarToken, aceptarPrestamo);
 router.post('/rechazar/:id_prestamo', verificarToken,rechazarPrestamo);
 router.get('/aprobados', verificarToken, obtenerPrestamosAceptados);
-router.post('/liquidar/:id_prestamo', verificarToken, liquidarPrestamo);
+router.post('/pagosfuncionario', verificarToken, realizarPagoFuncionario);
 
 module.exports = router;

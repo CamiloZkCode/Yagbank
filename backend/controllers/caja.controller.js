@@ -41,7 +41,7 @@ const CajaController = {
 
       const id_caja = caja.id_caja;
 
-      // Nueva sección: Crear cajas para dependientes si rol es superior
+      // 🔹 Crear cajas para dependientes si el rol es superior
       if (rol !== "Asesor") {
         let dependentQuery = "";
         let params = [];
@@ -82,7 +82,7 @@ const CajaController = {
         }
       }
 
-      // Función auxiliar mejorada
+      // 🔹 Función auxiliar para cálculos
       const calcularTotal = async (query, params, defaultValue = 0) => {
         try {
           const [[result]] = await db.execute(query, params);
@@ -98,18 +98,19 @@ const CajaController = {
         }
       };
 
-      // Calcular totales
+      // 🔹 Calcular totales
       const [
         total_cobrado,
         total_prestado_clientes,
         total_prestamos_funcionarios,
-        total_ingresos,
-        total_gastos,
+        total_ingresos_normales,
+        total_gastos_normales,
         clavos_dia,
         clientes_clavos_totales,
+        total_pagos_funcionarios,
       ] = await Promise.all([
         calcularTotal(
-          `SELECT IFNULL(SUM(monto),0) AS total FROM cuotas WHERE id_caja = ? AND pagada = 1`,
+          `SELECT IFNULL(SUM(monto),0) AS total FROM cuotas WHERE id_caja = ? AND estado = 'pagada'`,
           [id_caja]
         ),
         calcularTotal(
@@ -134,23 +135,33 @@ const CajaController = {
           [id_caja]
         ),
         calcularTotal(`SELECT COUNT(*) AS total FROM clientes_clavo`, []),
+        calcularTotal(
+          `SELECT IFNULL(SUM(valor),0) AS total FROM pagos_prestamos_funcionarios WHERE id_caja = ?`,
+          [id_caja]
+        ),
       ]);
 
+      // 🔹 Ajustes finales
       const total_prestado = Number(total_prestado_clientes);
-      const gastos_totales =
-        Number(total_gastos) + Number(total_prestamos_funcionarios);
+
+      const total_ingresos =
+        Number(total_ingresos_normales) + Number(total_pagos_funcionarios);
+
+      const total_gastos =
+        Number(total_gastos_normales) + Number(total_prestamos_funcionarios);
 
       const caja_final =
         Number(caja.caja_inicial) +
         Number(total_cobrado) +
-        Number(total_ingresos) -
-        (Number(gastos_totales) + Number(total_prestado));
+        total_ingresos -
+        (total_gastos + total_prestado);
 
+      // 🔹 Guardar en DB
       await actualizarCaja(id_caja, {
         total_cobrado,
         total_prestado,
         total_ingresos,
-        total_gastos: gastos_totales,
+        total_gastos,
         clavos_dia,
         clientes_clavos_totales,
         caja_final,
@@ -197,8 +208,7 @@ const CajaController = {
   async cerrarCaja(req, res, next) {
     try {
       const { id_usuario, rol } = req.user;
-      const fecha = fechaHoy(); // ✅ siempre Bogotá
-      // Ahora con TZ fijado
+      const fecha = fechaHoy();
 
       const cajasAbiertas = await verificarCajasDependientes(
         id_usuario,
@@ -216,7 +226,7 @@ const CajaController = {
           })),
         });
       }
-      // 3. Obtener datos consolidados
+
       const cajaConsolidada = await obtenerCajasPorRol(id_usuario, rol, fecha);
 
       let cajaUsuario = await obtenerCajaPorUsuarioYFecha(id_usuario, fecha);
@@ -229,7 +239,6 @@ const CajaController = {
         return res.status(400).json({ error: "La caja ya está cerrada" });
       }
 
-      // Actualizar con consolidados y cerrar
       await actualizarCaja(cajaUsuario.id_caja, {
         total_cobrado: Number(cajaConsolidada.total_cobrado) || 0,
         total_prestado: Number(cajaConsolidada.total_prestado) || 0,
@@ -255,7 +264,7 @@ const CajaController = {
 
   async verificarCajasDependientes(req, res, next) {
     try {
-      const { id_usuario, rol } = req.user; // Obtenemos del token, no de query
+      const { id_usuario, rol } = req.user;
       const fecha = fechaHoy();
 
       const cajasAbiertas = await verificarCajasDependientes(
@@ -277,7 +286,6 @@ const CajaController = {
   async cerrarCajaAutomatica(req, res, next) {
     try {
       const fecha = fechaHoy();
-      // Obtener todas las cajas abiertas del día actual
       const [abiertas] = await db.execute(
         `SELECT c.id_caja, c.id_usuario, r.rol 
          FROM caja c 
@@ -287,13 +295,11 @@ const CajaController = {
         [fecha]
       );
 
-      // Ordenar por rol: Asesores primero, luego Supervisores, Administradores
       const ordenRoles = ["Asesor", "Supervisor", "Administrador"];
       abiertas.sort(
         (a, b) => ordenRoles.indexOf(a.rol) - ordenRoles.indexOf(b.rol)
       );
 
-      // Cerrar cada caja
       for (const caja of abiertas) {
         const cajaConsolidada = await obtenerCajasPorRol(
           caja.id_usuario,
@@ -316,7 +322,6 @@ const CajaController = {
         );
       }
 
-      // Si se llama como endpoint, responder
       if (res) {
         res.json({
           message: "Cierre automático de cajas completado",
@@ -328,7 +333,7 @@ const CajaController = {
       if (res) {
         next(error);
       } else {
-        throw error; // Para el cron, solo lanzar error para logging
+        throw error;
       }
     }
   },

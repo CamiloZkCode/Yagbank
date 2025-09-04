@@ -1,5 +1,39 @@
 <template>
     <div>
+        <!-- Modal Pago -->
+        <div v-if="pagoCuota" class="modal-overlay">
+            <div class="modal-content">
+                <span class="material-symbols-outlined close-icon"
+                    @click="pagoCuota = false; limpiarFormulario()">close</span>
+                <h2>Pago Préstamo - {{ prestamoSeleccionado?.nombre_funcionario }}</h2>
+                <form @submit.prevent="guardarPago" enctype="multipart/form-data">
+                    <div class="opciones-pago">
+                        <label>
+                            <input type="radio" value="abono" v-model="tipoPago" required />
+                            Abono Parcial
+                        </label>
+                        <label>
+                            <input type="radio" value="liquidar" v-model="tipoPago" />
+                            Liquidar Préstamo
+                        </label>
+                    </div>
+                    <!-- Abono parcial -->
+                    <div v-if="tipoPago === 'abono'">
+                        <label for="montoCuota">Valor a Pagar:</label>
+                        <input type="number" id="montoCuota" v-model="montoAbono" required min="1"
+                            :max="prestamoSeleccionado?.saldo" class="valor" />
+                    </div>
+                    <!-- Liquidar préstamo -->
+                    <div v-if="tipoPago === 'liquidar'">
+                        <label for="montoLiquidar">Total a liquidar:</label>
+                        <input type="number" id="montoLiquidar" :value="prestamoSeleccionado?.saldo" readonly
+                            class="valor" />
+                    </div>
+                    <button type="submit">Guardar Pago</button>
+                </form>
+            </div>
+        </div>
+
         <!-- Tabla -->
         <div class="contenedor-tabla">
             <div class="contenedor-solicitudes">
@@ -10,24 +44,20 @@
                     <div class="derecha">
                         <div class="info">
                             <h4>{{ solicitud.nombre_funcionario }}</h4>
-                            <small class="text-muted">
-                                Solicita un adelanto de ${{solicitud.monto}}
-                            </small>
+                            <small class="text-muted">Solicita un adelanto de ${{ solicitud.monto }}</small>
                         </div>
                     </div>
                     <img class="icono-boton" src="/src/assets/Icons/aceptar.png" alt="Aceptar"
-                        @click="aprobarPrestamo(solicitud.id_prestamo)" />
+                        @click="handleAprobarPrestamo(solicitud.id_prestamo)" />
                     <img class="icono-boton" src="/src/assets/Icons/cerrar.png" alt="Denegar"
-                        @click="rechazarPrestamo(solicitud.id_prestamo)" />
+                        @click="handleRechazarPrestamo(solicitud.id_prestamo)" />
                 </div>
-                <div v-if="pendientes.length === 0" class="sin-solicitudes">
-                    No hay solicitudes pendientes.
-                </div>
+                <div v-if="pendientes.length === 0" class="sin-solicitudes">No hay solicitudes pendientes.</div>
             </div>
 
             <div class="filtros">
                 <div class="filtro-nombre">
-                    <input class="filtro-nom" type="text" placeholder="Busqueda por nombre" v-model="filtroNombre" />
+                    <input class="filtro-nom" type="text" placeholder="Búsqueda por nombre" v-model="filtroNombre" />
                     <span class="material-symbols-outlined">search</span>
                 </div>
             </div>
@@ -38,29 +68,36 @@
                         <tr>
                             <th class="columna-min">Fecha</th>
                             <th>Funcionario</th>
-                            <th>Autorizo</th>
+                            <th>Autorizó</th>
                             <th>Monto</th>
                             <th>Abono</th>
                             <th>Saldo</th>
-                            <th>Acciones</th>
+                            <th>Estado</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="prestamo in prestamosFiltrados" :key="prestamo.id_prestamo">
                             <td>{{ formatDate(prestamo.fecha) }}</td>
                             <td class="nombre">{{ prestamo.nombre_funcionario }}</td>
-                            <td class="nombre">{{ prestamo.autorizado_por || '-' }}</td>
+                            <td class="nombre">{{ prestamo.nombre_autorizado || '-' }}</td>
                             <td>${{ prestamo.monto }}</td>
-                            <td>${{ prestamo.abono }}</td>
+                            <td>
+                                <div class="contenedor-pagos">
+                                    ${{ prestamo.abono }}
+                                    <button v-if="prestamo.estado === 'Aprobado'" class="btn-pagos"
+                                        @click="abrirModalPago(prestamo)">Pagar</button>
+                                </div>
+                            </td>
                             <td>${{ prestamo.saldo }}</td>
                             <td>
-                                <img v-if="prestamo.estado === 'Aprobado'" class="icono-boton"
-                                    src="/src/assets/Icons/Bloqueo.png" alt="Liquidar"
-                                    @click="liquidarPrestamo(prestamo.id_prestamo)" title="Liquidar préstamo">
+                                <span
+                                    :class="['estado', { 'aprobado': prestamo.estado === 'Aprobado', 'liquidado': prestamo.estado === 'Liquidado' }]">
+                                    {{ prestamo.estado }}
+                                </span>
                             </td>
                         </tr>
                         <tr v-if="prestamosFiltrados.length === 0">
-                            <td colspan="8">No hay préstamos registrados</td>
+                            <td colspan="7">No hay préstamos registrados</td>
                         </tr>
                     </tbody>
                 </table>
@@ -70,58 +107,55 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
 import {
     obtenerSolicitudesPendientes,
     obtenerPrestamosAceptados,
-    aceptarPrestamo as apiAceptarPrestamo,
-    rechazarPrestamo as apiRechazarPrestamo,
-    liquidarPrestamo as apiLiquidarPrestamo
-} from '@/services/funcionariocredito'
-import alertify from 'alertifyjs'
-import 'alertifyjs/build/css/alertify.css'
+    aceptarPrestamo,
+    rechazarPrestamo,
+    realizarPago,
+} from '@/services/funcionariocredito';
+import alertify from 'alertifyjs';
+import 'alertifyjs/build/css/alertify.css';
 
-const authStore = useAuthStore()
-
-// Datos
-const pendientes = ref([])
-const prestamos = ref([])
-const filtroNombre = ref('')
-
+const authStore = useAuthStore();
+const pendientes = ref([]);
+const prestamos = ref([]);
+const filtroNombre = ref('');
+const pagoCuota = ref(false);
+const prestamoSeleccionado = ref(null);
+const tipoPago = ref('');
+const montoAbono = ref(0);
 
 const formatDate = (dateString) => {
-    if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('es-ES')
-}
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('es-ES');
+};
 
-// Filtros
 const prestamosFiltrados = computed(() => {
     return prestamos.value.filter(prestamo =>
         prestamo.nombre_funcionario.toLowerCase().includes(filtroNombre.value.toLowerCase())
-    )
-})
+    );
+});
 
-// Cargar datos
 const cargarDatos = async () => {
     try {
         const [pendientesRes, aprobadosRes] = await Promise.all([
             obtenerSolicitudesPendientes(),
-            obtenerPrestamosAceptados()
-        ])
-
-        pendientes.value = pendientesRes.data || []
-        prestamos.value = aprobadosRes.data || []
+            obtenerPrestamosAceptados(),
+        ]);
+        pendientes.value = pendientesRes.data || [];
+        prestamos.value = aprobadosRes.data || [];
     } catch (error) {
-        console.error('Error al cargar datos:', error)
-        alertify.error('Error al cargar los préstamos')
+        console.error('Error al cargar datos:', error);
+        alertify.error('Error al cargar los préstamos');
     }
-}
+};
 
-// Acciones
-const aprobarPrestamo = async (id) => {
+const handleAprobarPrestamo = async (id) => {
     try {
-        await apiAceptarPrestamo(id);
+        await aceptarPrestamo(id);
         alertify.success('Préstamo aprobado correctamente');
         await cargarDatos();
     } catch (error) {
@@ -131,35 +165,145 @@ const aprobarPrestamo = async (id) => {
     }
 };
 
-const rechazarPrestamo = async (id) => {
+const handleRechazarPrestamo = async (id) => {
     try {
-        await apiRechazarPrestamo(id)
-        alertify.success('Préstamo rechazado correctamente')
-        cargarDatos()
+        await rechazarPrestamo(id);
+        alertify.success('Préstamo rechazado correctamente');
+        await cargarDatos();
     } catch (error) {
-        console.error('Error al rechazar:', error)
-        alertify.error('Error al rechazar el préstamo')
+        console.error('Error al rechazar:', error);
+        const message = error.response?.data?.message || error.message || 'Error desconocido';
+        alertify.error(`Error al rechazar el préstamo: ${message}`);
     }
-}
+};
 
-const liquidarPrestamo = async (id) => {
+const abrirModalPago = (prestamo) => {
+    prestamoSeleccionado.value = prestamo;
+    pagoCuota.value = true;
+    tipoPago.value = '';
+    montoAbono.value = 0;
+};
+
+const guardarPago = async () => {
     try {
-        await apiLiquidarPrestamo(id)
-        alertify.success('Préstamo liquidado correctamente')
-        cargarDatos()
-    } catch (error) {
-        console.error('Error al liquidar:', error)
-        alertify.error('Error al liquidar el préstamo')
-    }
-}
+        const idPrestamo = prestamoSeleccionado.value?.id_prestamo;
+        const saldo = prestamoSeleccionado.value?.saldo;
+        const tipo = tipoPago.value;
+        const monto = tipo === 'abono' ? Number(montoAbono.value) : saldo;
 
-// Inicializar
+        if (!idPrestamo || !saldo || !tipo) {
+            alertify.error('Datos incompletos para procesar el pago');
+            return;
+        }
+
+        if (tipo === 'abono' && (!monto || monto <= 0 || monto > saldo)) {
+            alertify.error('El monto del abono debe ser mayor a 0 y menor o igual al saldo');
+            return;
+        }
+
+        console.log('Enviando pago:', { id_prestamo: idPrestamo, tipo, monto });
+        const data = { id_prestamo: idPrestamo, tipo, monto };
+        await realizarPago(data);
+        alertify.success('Pago realizado correctamente');
+        pagoCuota.value = false;
+        limpiarFormulario();
+        await cargarDatos();
+    } catch (error) {
+        console.error('Error al procesar el pago:', error);
+        const message = error.response?.data?.message || error.message || 'Error al procesar el pago';
+        alertify.error(message);
+    }
+};
+
+const limpiarFormulario = () => {
+    tipoPago.value = '';
+    montoAbono.value = 0;
+    prestamoSeleccionado.value = null;
+};
+
 onMounted(() => {
-    cargarDatos()
-})
+    cargarDatos();
+});
 </script>
 
 <style scoped>
+.valor {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid var(--color-info-luz);
+    border-radius: 6px;
+}
+
+.opciones-pago {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-content {
+    background: var(--color-background);
+    padding: 2rem;
+    border-radius: var(--card-border-radius);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-content::-webkit-scrollbar {
+    height: 0.5rem;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0.8rem;
+}
+
+input[type="radio"] {
+    appearance: auto;
+    /* fuerza a mostrar el radio nativo */
+    -webkit-appearance: radio;
+    -moz-appearance: radio;
+    accent-color: var(--color-azul-1);
+    /* color personalizado */
+    margin-right: 6px;
+    cursor: pointer;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.close-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 28px;
+    color: var(--color-rojo-5);
+}
+
+.close-icon:hover {
+    color: var(--color-rojo-5);
+}
+
+
 .icono-boton {
     width: 1.5rem;
     height: 1.5rem;
@@ -308,20 +452,31 @@ table tbody td {
     color: var(--color-dark-variant);
 }
 
-
-.contenedor-tabla .tabla-funcionarios .estado {
-    background: var(--color-aprobado-1);
-    color: var(--color-blanco);
-    border-radius: var(--card-border-radius);
-    padding: 0.5rem 0rem;
-    margin: 0.5rem 0rem;
+.contenedor-pagos {
+    display: flex;
+    flex-direction: column;
+    margin: 0.4rem 0;
 }
 
+.btn-pagos {
+    border: none;
+    color: var(--color-blanco);
+    background: var(--color-blanco);
+    cursor: pointer;
+}
 
 table tbody tr:last-child td {
     border: none;
 }
 
+.estado.aprobado {
+    color: var(--color-aprobado-1);
+    /* Verde para la letra */
+}
+
+.estado.liquidado {
+    color: var(--color-amarillo-2);
+}
 
 .ver-mas {
     cursor: pointer;

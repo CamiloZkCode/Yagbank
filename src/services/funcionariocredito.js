@@ -59,3 +59,13 @@ export async function liquidarPrestamo(id_prestamo) {
     throw err.response?.data || err;
   }
 }
+
+
+export const realizarPago = async (data) => {
+  try {
+    const response = await API.post('/funcionario/pagosfuncionario', data)
+    return response.data
+  } catch (error) {
+    throw error.response?.data || error
+  }
+}

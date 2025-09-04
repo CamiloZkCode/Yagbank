@@ -53,16 +53,43 @@ async function realizarPago(req, res) {
     let totalAmount = 0;
 
     if (tipo === "cuota") {
-      // Seleccionar la primera cuota no pagada, priorizando las morosas
-      const [cuotaRows] = await conn.query(
+      // PASO 1: Priorizar cuota del día actual (fecha_pago == today y estado != 'pagada')
+      let [cuotaRows] = await conn.query(
         `
         SELECT id_cuota, monto AS monto_original
         FROM cuotas 
-        WHERE id_prestamo = ? AND estado != 'pagada' 
-        ORDER BY CASE WHEN estado = 'no_pagada' THEN 0 ELSE 1 END, numero_cuota LIMIT 1
+        WHERE id_prestamo = ? AND estado != 'pagada' AND fecha_pago = ?
+        LIMIT 1
       `,
-        [id_prestamo]
+        [id_prestamo, today]
       );
+
+      // PASO 2: Si no hay para today, buscar la primera cuota pendiente futura (fecha_pago > today, ORDER BY fecha_pago ASC)
+      if (cuotaRows.length === 0) {
+        [cuotaRows] = await conn.query(
+          `
+          SELECT id_cuota, monto AS monto_original
+          FROM cuotas 
+          WHERE id_prestamo = ? AND estado != 'pagada' AND fecha_pago > ?
+          ORDER BY fecha_pago ASC LIMIT 1
+        `,
+          [id_prestamo, today]
+        );
+      }
+
+      // PASO 3: Si no hay actuales ni futuras, caer en la primera morosa (estado = 'no_pagada', ORDER BY numero_cuota ASC para pagar la más antigua primero)
+      if (cuotaRows.length === 0) {
+        [cuotaRows] = await conn.query(
+          `
+          SELECT id_cuota, monto AS monto_original
+          FROM cuotas 
+          WHERE id_prestamo = ? AND estado = 'no_pagada'
+          ORDER BY numero_cuota ASC LIMIT 1
+        `,
+          [id_prestamo]
+        );
+      }
+
       if (cuotaRows.length === 0) {
         throw new Error("No hay cuotas pendientes");
       }
@@ -70,6 +97,10 @@ async function realizarPago(req, res) {
       if (monto <= 0 || monto > prestamo.total) {
         throw new Error("Monto inválido para el pago de la cuota");
       }
+      // Opcional: Si quieres limitar el monto al de la cuota seleccionada (evitar abonar más de lo debido en una cuota)
+      // if (monto > cuota.monto_original) {
+      //   throw new Error("Monto excede la cuota seleccionada");
+      // }
       totalAmount = await pagarCuotaIndividual(
         conn,
         cuota.id_cuota,
@@ -200,8 +231,8 @@ async function marcarNota(req, res) {
 
 async function guardarOrden(req, res) {
   try {
-    const userId = req.user.id_usuario; // 🔑 del token JWT o sesión
-    const { orden } = req.body; // [{id_prestamo: 1, orden: 1}, ...]
+    const userId = req.user.id_usuario;
+    const { orden } = req.body;
 
     await guardarOrdenPrestamos(userId, orden);
 

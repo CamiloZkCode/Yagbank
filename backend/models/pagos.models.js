@@ -165,6 +165,12 @@ async function getPrestamosActivos(userId, role, fecha) {
       pc.fecha_finalizacion,
       cl.nota_credito,
       cl.referencia,
+      cl.direccion_trabajo as trabajo,
+      cl.ocupacion,
+      pc.forma_pago,
+      pc.valor_diario,
+      u_asesor.nombre as nombre_asesor,
+      u_creador.nombre as nombre_creador,
       (SELECT COUNT(*) FROM cuotas cu WHERE cu.id_prestamo = pc.id_prestamo AND cu.estado = 'pagada') as cuotas_pagadas,
       (SELECT SUM(cu.monto) FROM cuotas cu WHERE cu.id_prestamo = pc.id_prestamo AND cu.estado = 'pagada') as abono_total,
       (SELECT monto FROM cuotas cu WHERE cu.id_prestamo = pc.id_prestamo AND cu.estado = 'pagada' ORDER BY cu.fecha_pagada DESC, cu.numero_cuota DESC LIMIT 1) as abono,
@@ -174,6 +180,8 @@ async function getPrestamosActivos(userId, role, fecha) {
     FROM prestamos_clientes pc
     JOIN clientes cl ON pc.documento_cliente = cl.documento_cliente
     LEFT JOIN orden_prestamos op ON op.id_prestamo = pc.id_prestamo AND op.id_usuario = ?
+    LEFT JOIN usuarios u_asesor ON cl.id_asesor = u_asesor.id_usuario
+    LEFT JOIN usuarios u_creador ON cl.creado_por = u_creador.id_usuario
     WHERE pc.estado = 'Activo'
   `;
   const params = [fecha, fecha, userId];

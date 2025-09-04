@@ -119,21 +119,55 @@
                                 <tr v-if="usuarioExpandido === cliente.id_prestamo">
                                     <td colspan="6" class="fila-expandida">
                                         <div class="info-extra">
-                                            <strong>Dirección:</strong> {{ cliente.direccion }}
+                                            <strong>Nombre:</strong> {{ cliente.nombre }}
                                             &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <strong>Referencia:</strong> {{ cliente.referencia }}
+                                        </div>
+
+                                        <div class="info-extra">
                                             <strong>Teléfono:</strong> {{ cliente.telefono }}
-                                        </div>
-                                        <div class="info-extra">
-                                            <strong>Crédito:</strong> ${{ cliente.prestamo_total }}
                                             &nbsp;&nbsp;|&nbsp;&nbsp;
-                                            <strong>Número Cuotas:</strong> {{ cliente.numero_cuotas }}
+                                            <strong>Ocupación:</strong> {{ cliente.ocupacion }}
                                         </div>
                                         <div class="info-extra">
-                                            <strong>Solicitud Crédito:</strong> {{ formatDate(cliente.fecha_prestamo) }}
+                                            <strong>Dirección Casa:</strong> {{ cliente.direccion }}
+                                        </div>
+
+                                        <div class="info-extra">
+                                            <strong> Dirección Trabajo:</strong> {{ cliente.trabajo }}
+                                        </div>
+
+                                        <div class="info-extra">
+                                            <strong>Crédito:</strong> ${{ cliente.prestamo_principal }}
+                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <strong>Total:</strong> ${{ cliente.prestamo_total }}
+                                        </div>
+
+                                        <div class="info-extra">
+                                            <strong>{{ cliente.forma_pago }}:</strong> ${{ cliente.valor_diario }}
+                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <strong>N° Cuotas:</strong> {{ cliente.numero_cuotas }}
+                                        </div>
+
+                                        <div class="info-extra">
+                                            <strong>Total Abonos:</strong> ${{ calcularTotalAbonos(cliente) }}
+                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <strong>Saldo:</strong> {{ cliente.saldo_restante }}
+                                        </div>
+
+                                        <div class="info-extra">
+                                            <strong>Fecha Incio:</strong> {{ formatDate(cliente.fecha_prestamo) }}
                                             &nbsp;&nbsp;|&nbsp;&nbsp;
                                             <strong>Fecha Finalización:</strong> {{
                                                 formatDate(cliente.fecha_finalizacion) }}
                                         </div>
+
+                                        <div class="info-extra">
+                                            <strong>Asesor:</strong> {{ cliente.nombre_asesor }}
+                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <strong>Autorizo:</strong> {{ cliente.nombre_creador }}
+                                        </div>
+
                                         <div class="info-extra">
                                             <h3>Cuotas</h3>
                                             <div class="calendario-cuotas">
@@ -260,14 +294,14 @@ const guardarPago = async () => {
             alertify.success(`
                 <h4>Pago Realizado</h4>
                 <p>Cuota procesada con éxito</p>
-                <p><strong>Fecha:</strong> ${fechaHoy}</p>
+                <p><strong>Fecha:</strong> ${today}</p>
             `)
         } else {
             alertify.success(`
                 <h4>Pago Realizado</h4>
                 <p>Préstamo liquidado con éxito</p>
                 <p><strong>Valor:</strong> $${saldoRestante}</p>
-                <p><strong>Fecha:</strong> ${fechaHoy}</p>
+                <p><strong>Fecha:</strong> ${today}</p>
             `)
         }
 
@@ -295,6 +329,12 @@ const marcarClienteNota = async (documento_cliente, nota_credito) => {
     }
 }
 
+const calcularTotalAbonos = (cliente) => {
+    const cuotas = cuotasPrestamo.value[cliente.id_prestamo] || []
+    return cuotas
+        .filter(c => c.estado === 'pagada')
+        .reduce((total, c) => total + (c.monto || 0), 0)
+}
 const limpiarFormulario = () => {
     tipoPago.value = ""
     montoAbono.value = 0
@@ -693,7 +733,7 @@ button {
 
 .info-extra {
     padding: 0.5rem 1rem;
-    font-size: 0.95rem;
+    font-size: 1rem;
 }
 
 .calendario-cuotas {
@@ -841,7 +881,7 @@ button {
 
     .fila-expandida .info-extra {
         white-space: initial;
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
 }
 </style>
