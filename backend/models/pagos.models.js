@@ -4,11 +4,9 @@ const moment = require("moment-timezone");
 // Actualizar estados de cuotas morosas
 async function updateCuotaStates(today) {
   await db.query(
-    `
-    UPDATE cuotas 
-    SET estado = 'no_pagada'
-    WHERE estado = 'pendiente' AND fecha_pago < ?
-  `,
+    `UPDATE cuotas 
+     SET estado = 'no_pagada'
+     WHERE estado = 'pendiente' AND fecha_pago < ?`,
     [today]
   );
 }
@@ -17,11 +15,9 @@ async function updateCuotaStates(today) {
 async function guardarOrdenPrestamos(userId, orden) {
   for (const item of orden) {
     await db.query(
-      `
-      INSERT INTO orden_prestamos (id_usuario, id_prestamo, orden)
-      VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE orden = VALUES(orden)
-      `,
+      `INSERT INTO orden_prestamos (id_usuario, id_prestamo, orden)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE orden = VALUES(orden)`,
       [userId, item.id_prestamo, item.orden]
     );
   }
@@ -30,11 +26,9 @@ async function guardarOrdenPrestamos(userId, orden) {
 // Pagar una cuota individual
 async function pagarCuotaIndividual(conn, idCuota, idCaja, fechaPagada, monto) {
   const [cuota] = await conn.query(
-    `
-    SELECT monto AS monto_original
-    FROM cuotas 
-    WHERE id_cuota = ? AND estado != 'pagada'
-  `,
+    `SELECT monto AS monto_original
+     FROM cuotas 
+     WHERE id_cuota = ? AND estado != 'pagada'`,
     [idCuota]
   );
 
@@ -43,31 +37,22 @@ async function pagarCuotaIndividual(conn, idCuota, idCaja, fechaPagada, monto) {
   }
 
   await conn.query(
-    `
-    UPDATE cuotas 
-    SET estado = 'pagada', fecha_pagada = ?, id_caja = ?, monto = ?
-    WHERE id_cuota = ?
-  `,
+    `UPDATE cuotas 
+     SET estado = 'pagada', fecha_pagada = ?, id_caja = ?, monto = ?
+     WHERE id_cuota = ?`,
     [fechaPagada, idCaja, monto, idCuota]
   );
 
   return monto;
 }
+
 // Pagar todas las cuotas restantes
-async function pagarTodasCuotas(
-  conn,
-  idPrestamo,
-  idCaja,
-  fechaPagada,
-  montoTotal
-) {
+async function pagarTodasCuotas(conn, idPrestamo, idCaja, fechaPagada, montoTotal) {
   const [cuotas] = await conn.query(
-    `
-    SELECT id_cuota, monto 
-    FROM cuotas 
-    WHERE id_prestamo = ? AND estado != 'pagada' 
-    ORDER BY numero_cuota
-  `,
+    `SELECT id_cuota, monto 
+     FROM cuotas 
+     WHERE id_prestamo = ? AND estado != 'pagada' 
+     ORDER BY numero_cuota`,
     [idPrestamo]
   );
 
@@ -93,31 +78,26 @@ async function pagarTodasCuotas(
   return totalAmount;
 }
 
-// Actualizar total recaudado en caja
-async function actualizarCajaCobrado(conn, idCaja, amount) {
+// Actualizar total recaudado y tarjetas cobradas en caja
+async function actualizarCajaCobrado(conn, idCaja, amount, tarjetas_cobradas) {
   await conn.query(
-    `
-    UPDATE caja 
-    SET total_cobrado = total_cobrado + ? 
-    WHERE id_caja = ?
-  `,
-    [amount, idCaja]
+    `UPDATE caja 
+     SET total_cobrado = total_cobrado + ?, tarjetas_cobradas = ?
+     WHERE id_caja = ?`,
+    [amount, tarjetas_cobradas, idCaja]
   );
 }
 
 // Verificar si el préstamo está liquidado
 async function verificarLiquidacion(conn, idPrestamo) {
-  // Calcular el saldo restante
   const [result] = await conn.query(
-    `
-    SELECT 
-      pc.total as prestamo_total,
-      COALESCE(SUM(cu.monto), 0) as abono_total
-    FROM prestamos_clientes pc
-    LEFT JOIN cuotas cu ON cu.id_prestamo = pc.id_prestamo AND cu.estado = 'pagada'
-    WHERE pc.id_prestamo = ?
-    GROUP BY pc.id_prestamo, pc.total
-  `,
+    `SELECT 
+       pc.total as prestamo_total,
+       COALESCE(SUM(cu.monto), 0) as abono_total
+     FROM prestamos_clientes pc
+     LEFT JOIN cuotas cu ON cu.id_prestamo = pc.id_prestamo AND cu.estado = 'pagada'
+     WHERE pc.id_prestamo = ?
+     GROUP BY pc.id_prestamo, pc.total`,
     [idPrestamo]
   );
 
@@ -129,20 +109,15 @@ async function verificarLiquidacion(conn, idPrestamo) {
 
   if (saldoRestante <= 0) {
     await conn.query(
-      `
-      UPDATE prestamos_clientes 
-      SET estado = 'Liquidado' 
-      WHERE id_prestamo = ?
-    `,
+      `UPDATE prestamos_clientes 
+       SET estado = 'Liquidado' 
+       WHERE id_prestamo = ?`,
       [idPrestamo]
     );
-    // Marcar todas las cuotas restantes como pagadas con monto 0
     await conn.query(
-      `
-      UPDATE cuotas 
-      SET estado = 'pagada', monto = 0, fecha_pagada = ?
-      WHERE id_prestamo = ? AND estado != 'pagada'
-    `,
+      `UPDATE cuotas 
+       SET estado = 'pagada', monto = 0, fecha_pagada = ?
+       WHERE id_prestamo = ? AND estado != 'pagada'`,
       [moment().tz("America/Bogota").format("YYYY-MM-DD"), idPrestamo]
     );
   }
@@ -194,7 +169,7 @@ async function getPrestamosActivos(userId, role, fecha) {
     params.push(userId);
   }
 
-  query += ` ORDER BY orden ASC`; // 🔥 usa el orden guardado
+  query += ` ORDER BY orden ASC`;
 
   const [rows] = await db.query(query, params);
   return rows.map((row) => ({
@@ -208,12 +183,10 @@ async function getPrestamosActivos(userId, role, fecha) {
 // Obtener cuotas de un préstamo
 async function getCuotasPrestamo(idPrestamo) {
   const [rows] = await db.query(
-    `
-    SELECT numero_cuota, fecha_pago, monto, estado, fecha_pagada
-    FROM cuotas
-    WHERE id_prestamo = ?
-    ORDER BY numero_cuota
-  `,
+    `SELECT numero_cuota, fecha_pago, monto, estado, fecha_pagada
+     FROM cuotas
+     WHERE id_prestamo = ?
+     ORDER BY numero_cuota`,
     [idPrestamo]
   );
 

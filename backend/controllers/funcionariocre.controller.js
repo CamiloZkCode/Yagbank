@@ -93,38 +93,56 @@ async function obtenerPrestamosAceptados(req, res) {
 }
 
 async function aceptarPrestamo(req, res) {
+  const conn = await db.getConnection();
   try {
+    await conn.beginTransaction();
+
     await actualizarEstadoPrestamo(
+      conn, // <-- aquí pasamos la conexión
       req.params.id_prestamo,
       "Aprobado",
       req.user.id_usuario
     );
+
+    await conn.commit();
     return res
       .status(200)
       .json({ success: true, message: "Préstamo aprobado exitosamente" });
   } catch (error) {
+    await conn.rollback();
     console.error("Error en aceptarPrestamo:", error);
     return res
       .status(500)
       .json({ error: "SERVER_ERROR", message: "Error interno del servidor" });
+  } finally {
+    conn.release();
   }
 }
 
 async function rechazarPrestamo(req, res) {
+  const conn = await db.getConnection();
   try {
+    await conn.beginTransaction();
+
     await actualizarEstadoPrestamo(
+      conn,
       req.params.id_prestamo,
       "Rechazado",
       req.user.id_usuario
     );
+
+    await conn.commit();
     return res
       .status(200)
       .json({ success: true, message: "Préstamo rechazado exitosamente" });
   } catch (error) {
+    await conn.rollback();
     console.error("Error en rechazarPrestamo:", error);
     return res
       .status(500)
       .json({ error: "SERVER_ERROR", message: "Error interno del servidor" });
+  } finally {
+    conn.release();
   }
 }
 
@@ -164,8 +182,9 @@ async function realizarPagoFuncionario(req, res) {
       });
     }
 
-    let pagoMonto = tipo === "abono" ? monto : prestamo.saldo;
-    if (pagoMonto <= 0 || pagoMonto > prestamo.saldo) {
+    let pagoMonto = tipo === "abono" ? Number(monto) : prestamo.saldo;
+
+    if (isNaN(pagoMonto) || pagoMonto <= 0 || pagoMonto > prestamo.saldo) {
       return res.status(400).json({
         error: "MONTO_INVALIDO",
         message: "Monto inválido para el pago",
@@ -190,7 +209,7 @@ async function realizarPagoFuncionario(req, res) {
     const updatedPrestamo = await obtenerPrestamoPorId(conn, id_prestamo);
     if (updatedPrestamo.saldo <= 0) {
       await actualizarEstadoPrestamo(
-        conn,
+        conn, // <-- conexión
         id_prestamo,
         "Liquidado",
         user.id_usuario

@@ -50,7 +50,10 @@ async function obtenerPrestamosPorFuncionario(id_funcionario, estado = null) {
   return prestamos;
 }
 
-async function obtenerPrestamosPorAdministrador(id_administrador, estado = null) {
+async function obtenerPrestamosPorAdministrador(
+  id_administrador,
+  estado = null
+) {
   let query = `
     SELECT 
       pf.*, 
@@ -81,7 +84,12 @@ async function obtenerPrestamosPorAdministrador(id_administrador, estado = null)
   return prestamos;
 }
 
-async function actualizarEstadoPrestamo(conn, id_prestamo, estado, autorizado_por = null) {
+async function actualizarEstadoPrestamo(
+  conn,
+  id_prestamo,
+  estado,
+  autorizado_por = null
+) {
   const query = `
     UPDATE prestamos_funcionarios
     SET estado = ?, autorizado_por = ?
@@ -100,12 +108,20 @@ async function obtenerPrestamoPorId(conn, id_prestamo) {
   const [prestamo] = await conn.query(query, [id_prestamo]);
   return prestamo[0] || null;
 }
-async function crearPagoFuncionario(conn, { id_caja, id_prestamo, valor, recibido_por }) {
+async function crearPagoFuncionario(
+  conn,
+  { id_caja, id_prestamo, valor, recibido_por }
+) {
   const query = `
     INSERT INTO pagos_prestamos_funcionarios (id_caja, id_prestamo, valor, recibido_por)
     VALUES (?, ?, ?, ?)
   `;
-  const [result] = await conn.query(query, [id_caja, id_prestamo, valor, recibido_por]);
+  const [result] = await conn.query(query, [
+    id_caja,
+    id_prestamo,
+    valor,
+    recibido_por,
+  ]);
   return result.insertId;
 }
 

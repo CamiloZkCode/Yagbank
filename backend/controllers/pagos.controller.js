@@ -25,9 +25,7 @@ async function realizarPago(req, res) {
 
     // Verificar préstamo activo
     const [prestamoRows] = await conn.query(
-      `
-      SELECT * FROM prestamos_clientes WHERE id_prestamo = ? AND estado = 'Activo'
-    `,
+      `SELECT * FROM prestamos_clientes WHERE id_prestamo = ? AND estado = 'Activo'`,
       [id_prestamo]
     );
     if (prestamoRows.length === 0) {
@@ -37,9 +35,7 @@ async function realizarPago(req, res) {
 
     // Obtener el asesor del cliente
     const [clienteRows] = await conn.query(
-      `
-      SELECT id_asesor FROM clientes WHERE documento_cliente = ?
-    `,
+      `SELECT id_asesor FROM clientes WHERE documento_cliente = ?`,
       [prestamo.documento_cliente]
     );
     const idAsesor = clienteRows[0].id_asesor;
@@ -53,39 +49,33 @@ async function realizarPago(req, res) {
     let totalAmount = 0;
 
     if (tipo === "cuota") {
-      // PASO 1: Priorizar cuota del día actual (fecha_pago == today y estado != 'pagada')
+      // PASO 1: Priorizar cuota del día actual
       let [cuotaRows] = await conn.query(
-        `
-        SELECT id_cuota, monto AS monto_original
-        FROM cuotas 
-        WHERE id_prestamo = ? AND estado != 'pagada' AND fecha_pago = ?
-        LIMIT 1
-      `,
+        `SELECT id_cuota, monto AS monto_original
+         FROM cuotas 
+         WHERE id_prestamo = ? AND estado != 'pagada' AND fecha_pago = ?
+         LIMIT 1`,
         [id_prestamo, today]
       );
 
-      // PASO 2: Si no hay para today, buscar la primera cuota pendiente futura (fecha_pago > today, ORDER BY fecha_pago ASC)
+      // PASO 2: Si no hay para hoy, buscar primera cuota pendiente futura
       if (cuotaRows.length === 0) {
         [cuotaRows] = await conn.query(
-          `
-          SELECT id_cuota, monto AS monto_original
-          FROM cuotas 
-          WHERE id_prestamo = ? AND estado != 'pagada' AND fecha_pago > ?
-          ORDER BY fecha_pago ASC LIMIT 1
-        `,
+          `SELECT id_cuota, monto AS monto_original
+           FROM cuotas 
+           WHERE id_prestamo = ? AND estado != 'pagada' AND fecha_pago > ?
+           ORDER BY fecha_pago ASC LIMIT 1`,
           [id_prestamo, today]
         );
       }
 
-      // PASO 3: Si no hay actuales ni futuras, caer en la primera morosa (estado = 'no_pagada', ORDER BY numero_cuota ASC para pagar la más antigua primero)
+      // PASO 3: Si no hay actuales ni futuras, buscar primera morosa
       if (cuotaRows.length === 0) {
         [cuotaRows] = await conn.query(
-          `
-          SELECT id_cuota, monto AS monto_original
-          FROM cuotas 
-          WHERE id_prestamo = ? AND estado = 'no_pagada'
-          ORDER BY numero_cuota ASC LIMIT 1
-        `,
+          `SELECT id_cuota, monto AS monto_original
+           FROM cuotas 
+           WHERE id_prestamo = ? AND estado = 'no_pagada'
+           ORDER BY numero_cuota ASC LIMIT 1`,
           [id_prestamo]
         );
       }
@@ -97,10 +87,7 @@ async function realizarPago(req, res) {
       if (monto <= 0 || monto > prestamo.total) {
         throw new Error("Monto inválido para el pago de la cuota");
       }
-      // Opcional: Si quieres limitar el monto al de la cuota seleccionada (evitar abonar más de lo debido en una cuota)
-      // if (monto > cuota.monto_original) {
-      //   throw new Error("Monto excede la cuota seleccionada");
-      // }
+
       totalAmount = await pagarCuotaIndividual(
         conn,
         cuota.id_cuota,
@@ -120,11 +107,23 @@ async function realizarPago(req, res) {
       throw new Error("Tipo de pago inválido");
     }
 
-    await actualizarCajaCobrado(conn, caja.id_caja, totalAmount);
+    // Calcular tarjetas_cobradas para el asesor
+    const [tarjetasRows] = await conn.query(
+      `SELECT COUNT(DISTINCT pc.id_prestamo) AS tarjetas_cobradas
+       FROM cuotas cu
+       JOIN prestamos_clientes pc ON cu.id_prestamo = pc.id_prestamo
+       JOIN clientes cl ON pc.documento_cliente = cl.documento_cliente
+       WHERE cu.fecha_pagada = ? AND cu.estado = 'pagada' AND cl.id_asesor = ?`,
+      [today, idAsesor]
+    );
+    const tarjetas_cobradas = Number(tarjetasRows[0].tarjetas_cobradas) || 0;
+
+    // Actualizar caja con total_cobrado y tarjetas_cobradas
+    await actualizarCajaCobrado(conn, caja.id_caja, totalAmount, tarjetas_cobradas);
     await verificarLiquidacion(conn, id_prestamo);
 
     await conn.commit();
-    res.json({ success: true, amount: totalAmount });
+    res.json({ success: true, amount: totalAmount, tarjetas_cobradas });
   } catch (error) {
     await conn.rollback();
     console.error(error);

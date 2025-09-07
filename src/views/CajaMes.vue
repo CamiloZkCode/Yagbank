@@ -1,3 +1,9 @@
 <template>
-    <h1>Cuadre Mensual</h1>
+    <AdminCajaMensual />
+
 </template>
+
+<script setup>
+
+import AdminCajaMensual from '../components/Admin/AdminCajaMensual.vue';
+</script>
